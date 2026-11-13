@@ -8,7 +8,7 @@
 
 const auth = require('./auth.js');
 
-console.log('[api.js] LOADED v2026-11-12-qiniu');
+console.log('[api.js] LOADED v2026-11-13-incremental');
 
 const BASE_URL = 'http://45.64.75.15:4173';
 
@@ -224,8 +224,9 @@ function getTransport() { return checkCloud() ? 'cloud' : 'direct'; }
 
 // ====================================================================
 // 图片 → 后台异步调 proxy batchImages 批量转 base64
-// token-session 时 proxy 云函数只转前 6 张（防 6MB 响应上限）
-// 剩下的图片 Gallery 页后台调 patchProductsImgInPlace 分批转（每批 6 张）
+// token-session 时 proxy 云函数只转前 2 张（防云函数返回体积超限）
+// 剩下的图片由页面按需调用 patchImageUrls，每批 2 张、最多 3 批并发
+// 每批返回后立即回调页面，页面按 index 逐张 setData
 // ====================================================================
 
 // 需要 patch 的：不是 data:/cloud://，且是 http(s) URL 或 /uploads/ 相对路径
@@ -236,39 +237,82 @@ function needsPatch(img) {
   return /^https?:\/\//i.test(img);
 }
 
-const PATCH_BATCH = 1;  // 一次只请求一张图，避免云函数返回超 1MB
+// 单批 2 张：单张 base64 最大约 470KB，2 张仍在云函数 1MB 返回上限内
+// 3 个 worker 并发 → 最多约 6 张同时在途，比逐张串行快数倍
+const PATCH_BATCH_SIZE = 2;
+const PATCH_CONCURRENCY = 3;
 
+// 批量转换图片 URL。每批成功就回调 onBatch({ 原URL: dataURL })，
+// 页面可据此只更新对应下标的图片。失败批次会逐张重试一次，仍失败则跳过，
+// 不影响其余图片和页面渲染。shouldStop 用于页面刷新后中止旧任务。
+function patchImageUrls(urls, onBatch, shouldStop) {
+  const list = (urls || []).filter(Boolean);
+  if (!list.length) return Promise.resolve({ total: 0, ok: 0 });
+  if (!checkCloud()) {
+    console.warn('[api] patchImageUrls: cloud unavailable, keep original images');
+    return Promise.resolve({ total: list.length, ok: 0, skipped: true });
+  }
+
+  let next = 0;
+  let okCount = 0;
+
+  async function convertBatch(batch) {
+    try {
+      const res = await callCloudBatchImages(batch);
+      const images = (res && res.images) || {};
+      const keys = Object.keys(images);
+      if (keys.length) {
+        okCount += keys.length;
+        if (onBatch) onBatch(images, batch);
+      }
+    } catch (e) {
+      console.warn('[api] batchImages failed (' + batch.length + '): ' + e.message + ' -> retry one by one');
+      for (const url of batch) {
+        try {
+          const res = await callCloudBatchImages([url]);
+          if (res && res.images && res.images[url]) {
+            okCount += 1;
+            if (onBatch) onBatch({ [url]: res.images[url] }, [url]);
+          }
+        } catch (e2) {
+          console.warn('[api] image failed, keep placeholder: ' + url + ' (' + e2.message + ')');
+        }
+      }
+    }
+  }
+
+  async function worker() {
+    while (true) {
+      if (shouldStop && shouldStop()) return;
+      const start = next;
+      next += PATCH_BATCH_SIZE;
+      if (start >= list.length) return;
+      await convertBatch(list.slice(start, start + PATCH_BATCH_SIZE));
+    }
+  }
+
+  const workers = [];
+  for (let i = 0; i < PATCH_CONCURRENCY; i++) workers.push(worker());
+  return Promise.all(workers).then(() => {
+    console.log('[api] patchImageUrls done: ' + okCount + '/' + list.length);
+    return { total: list.length, ok: okCount };
+  });
+}
+
+// 兼容旧调用：原地替换 products[].image，全部完成后 resolve
 function patchProductsImgInPlace(products) {
   if (!products || !products.length) return Promise.resolve(products);
-  if (!checkCloud()) return Promise.resolve(products);
-
   const urls = new Set();
   for (const p of products) {
     if (needsPatch(p.image)) urls.add(p.image);
   }
   if (!urls.size) return Promise.resolve(products);
 
-  console.log('[api] patchProductsImgInPlace: ' + urls.size + ' 张待转');
-  const urlList = Array.from(urls);
-  const map = {};
-
-  async function run() {
-    for (let i = 0; i < urlList.length; i += PATCH_BATCH) {
-      const batch = urlList.slice(i, i + PATCH_BATCH);
-      try {
-        const res = await callCloudBatchImages(batch);
-        if (res && res.images) Object.assign(map, res.images);
-      } catch (e) {
-        console.warn('[api] batchImages failed:', e.message);
-      }
-    }
+  return patchImageUrls(Array.from(urls), (map) => {
     for (const p of products) {
       if (map[p.image]) p.image = map[p.image];
     }
-    console.log('[api] patchProductsImgInPlace done: ' + Object.keys(map).length + ' 张已替换');
-    return products;
-  }
-  return run();
+  }).then(() => products);
 }
 
 function patchDrawImgInPlace(draw) {
@@ -302,6 +346,7 @@ module.exports = {
   fullImgUrl,
   patchProducts,
   patchDraw,
+  patchImageUrls,
   patchProductsImgInPlace,
   patchDrawImgInPlace,
   login, register, logout,

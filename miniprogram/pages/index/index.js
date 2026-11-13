@@ -2,6 +2,10 @@ const api = require('../../utils/api.js');
 const i18n = require('../../utils/i18n.js');
 const auth = require('../../utils/auth.js');
 
+// 首屏占位图：2x2 浅灰 PNG（页面 .grid-img 本身也有同色背景）
+// 待转换的图先用它铺位，转换成功后按 index 替换，避免空屏或裂图
+const PLACEHOLDER_IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEUlEQVR42mP48OHNfxBmgDEAiEwPLVCOe4IAAAAASUVORK5CYII=';
+
 Page({
   data: {
     products: [],
@@ -26,8 +30,10 @@ Page({
   noop() {},
 
   async loadProducts() {
+    const runId = (this._loadRun = (this._loadRun || 0) + 1);
+
     try {
-      this.setData({ loading: true });
+      if (!this.data.products.length) this.setData({ loading: true });
       const app = getApp();
       let rawProducts = null;
 
@@ -47,17 +53,42 @@ Page({
 
       console.log('[Gallery] final rawProducts.length=', rawProducts?.length, 'first img=', rawProducts?.[0]?.image?.substring(0, 60));
 
-
       const cats = this.buildCategories(rawProducts);
       this._rawProducts = rawProducts;
 
-      // 先只 setData categories（标签栏能立刻出来），**不 setData products**
-      // 避免 image 组件看到相对路径 /uploads/xxx.webp → 渲染层报 Failed to load
-      this.setData({ categories: cats });
+      // 构造首屏列表：已转换过的用缓存图，待转换的先用占位图，其余原样显示
+      // 这样 setData 之后用户立刻能看到全部条目，而不是等图片转完
+      // 缓存直接复用当前列表里已转好的 data URL，避免额外一份大对象常驻内存
+      const canProxyImages = api.getTransport() === 'cloud';
+      const cached = {};
+      (this.data.products || []).forEach((p) => {
+        if (p._src && typeof p.image === 'string' && p.image.indexOf('data:') === 0) {
+          cached[p._src] = p.image;
+        }
+      });
+      const patchUrls = [];
+      const display = (rawProducts || []).map((p) => {
+        const item = Object.assign({}, p);
+        if (api.needsPatch(item.image)) {
+          item._src = item.image;
+          if (!canProxyImages) {
+            // 直连模式无法转 base64，保留原始 URL 作为兜底
+            console.log('[Gallery] direct mode, keep original image:', item.image.substring(0, 60));
+          } else if (cached[item.image]) {
+            item.image = cached[item.image];
+          } else {
+            item.image = PLACEHOLDER_IMG;
+            patchUrls.push(item._src);
+          }
+        }
+        return item;
+      });
 
-      // 先转前 12 张 data URL → 转完一起 setData products
-      // 这样渲染层第一次看到的就是 data: URL，不会触发 Failed to load
-      await this._patchInBatchesAndShow(rawProducts);
+      this.setData({ categories: cats, products: display, loading: false });
+      console.log('[Gallery] FIRST FRAME products=' + display.length + ', pending images=' + patchUrls.length);
+
+      // 后台增量转换：不 await，首屏不受影响
+      this._patchImages(Array.from(new Set(patchUrls)), display, runId);
     } catch (e) {
       wx.showToast({ title: '加载失败', icon: 'none' });
     } finally {
@@ -65,35 +96,37 @@ Page({
     }
   },
 
-  // 一张图一个请求（云函数每次只转一张，避免返回体积超 1MB）
-  // 3 个并发 worker 加速，每转好一张只 setData 对应的 image 字段
-  async _patchInBatchesAndShow(products) {
-    console.log('[Gallery] _patchOneByOne START products.length=', products?.length);
+  // 后台逐批转换，每批完成只更新对应下标，不整表重绘
+  _patchImages(urls, products, runId) {
+    if (!urls.length) {
+      console.log('[Gallery] no pending images');
+      return;
+    }
 
-    // 先把已有数据渲染出来（proxy 主请求已带的前 2 张是 data URL，其余是相对路径）
-    this.setData({ products: products.slice() });
+    const indexMap = {};
+    products.forEach((p, i) => {
+      if (!p._src) return;
+      if (!indexMap[p._src]) indexMap[p._src] = [];
+      indexMap[p._src].push(i);
+    });
 
-    const CONCURRENCY = 3;
-    let next = 0;
-
-    const worker = async () => {
-      while (true) {
-        const i = next++;
-        if (i >= products.length) return;
-        if (!api.needsPatch(products[i].image)) continue;
-        try {
-          await api.patchProductsImgInPlace([products[i]]);
-          this.setData({ ['products[' + i + '].image']: products[i].image });
-        } catch (e) {
-          console.warn('[Gallery] patch image ' + i + ' failed:', e.message);
+    api.patchImageUrls(urls, (map) => {
+      if (runId !== this._loadRun) return;
+      Object.keys(map).forEach((src) => {
+        const dataUrl = map[src];
+        const list = indexMap[src] || [];
+        for (let k = 0; k < list.length; k++) {
+          this.setData({ ['products[' + list[k] + '].image']: dataUrl });
         }
-      }
-    };
-
-    const workers = [];
-    for (let w = 0; w < CONCURRENCY; w++) workers.push(worker());
-    await Promise.all(workers);
-    console.log('[Gallery] all images patched');
+        console.log('[Gallery] image ready: index=' + list.join(',') + ' src=' + src.substring(0, 50));
+      });
+    }, () => runId !== this._loadRun).then((r) => {
+      if (runId !== this._loadRun) return;
+      const remain = this.data.products.filter((p) => p.image === PLACEHOLDER_IMG).length;
+      console.log('[Gallery] image patch finished: ' + r.ok + '/' + r.total + ', placeholders left=' + remain);
+    }).catch((e) => {
+      console.warn('[Gallery] image patch error:', e.message);
+    });
   },
 
   buildCategories(products) {
