@@ -18,6 +18,8 @@ const ROLL_FRAMES = 30;
 const ROLL_MIN_DELAY = 40;
 const ROLL_MAX_DELAY = 800;
 const LOCK_FADE_MS = 500;
+// 未中奖卡片定格后在画面上额外停留的时长（可调）
+const LOSE_HOLD_MS = 1000;
 // 未中奖也作为滚动序列里的一格（用卡片渲染，不是图片）
 const LOSE_FRAME = '__lose__';
 
@@ -595,10 +597,14 @@ Page({
             ? LOSE_FRAME
             : (this._pendingPrizeImage || frames[frame % frames.length].image);
           this.setData({ rollImage: winnerImage, lockFrame: true });
+          // 中奖：淡入后立即结束；未中奖：淡入后再停留 LOSE_HOLD_MS，期间不切帧
+          const holdMs = this._pendingPrizeType === 'none'
+            ? LOCK_FADE_MS + LOSE_HOLD_MS
+            : LOCK_FADE_MS;
           setTimeout(() => {
             this.setData({ rolling: false, lockFrame: false });
             resolve();
-          }, LOCK_FADE_MS);
+          }, holdMs);
           return;
         }
 
