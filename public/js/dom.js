@@ -35,8 +35,6 @@ const els = {
   messagesBtn: $('#messages-btn'),
   messagesView: $('#messages-view'),
   messagesBack: $('#messages-back'),
-  messagesThread: $('#messages-thread'),
-  messagesInput: $('#messages-input'),
   msgBell: $('#msg-bell'),
   bellDot: $('#bell-dot'),
   bonusModal: $('#bonus-modal'),

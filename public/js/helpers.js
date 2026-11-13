@@ -84,8 +84,6 @@ function getLocalized(product, field, lang) {
   return product[field] || '';
 }
 
-const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
-
 function toast(message) {
   els.toast.textContent = message;
   els.toast.hidden = false;

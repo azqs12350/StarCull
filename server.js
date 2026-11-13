@@ -5,10 +5,9 @@ const express = require('express');
 const path = require('path');
 const { PORT, UPLOAD_DIR, PUBLIC_DIR, ROOT_DIR } = require('./src/config');
 const { bootstrap, syncFolderProducts } = require('./src/catalog');
-const { diffAndSync, backfillAllImages } = require('./src/sync');
+const { diffAndSync } = require('./src/sync');
 const { detectCorrectZone } = require('./src/qiniu');
 const { runStartupConvert } = require('./src/convert');
-const { db } = require('./src/db');
 
 bootstrap();
 syncFolderProducts();

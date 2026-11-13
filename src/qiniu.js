@@ -15,8 +15,7 @@ const qiniu = require('qiniu');
 const fs = require('fs');
 const path = require('path');
 const {
-  QINIU_ACCESS_KEY, QINIU_SECRET_KEY, QINIU_BUCKET, QINIU_ZONE, QINIU_DOMAIN,
-  UPLOAD_DIR
+  QINIU_ACCESS_KEY, QINIU_SECRET_KEY, QINIU_BUCKET, QINIU_ZONE, QINIU_DOMAIN
 } = require('./config');
 
 let _bucketManager = null;
@@ -166,30 +165,6 @@ async function uploadFile(localPath, qiniuKey) {
 }
 
 /**
- * 上传 Buffer 到七牛云
- */
-async function uploadBuffer(buf, qiniuKey, contentType) {
-  if (!isConfigured()) throw new Error('七牛云未配置');
-
-  const uploadToken = makeUploadToken(qiniuKey);
-  const putExtra = new qiniu.form_up.PutExtra();
-  putExtra.mimeType = contentType || guessMime(qiniuKey);
-
-  return new Promise((resolve, reject) => {
-    getFormUploader().put(uploadToken, qiniuKey, buf, putExtra, (err, respBody, respInfo) => {
-      if (err) return reject(err);
-      if (respInfo.statusCode === 200) {
-        const url = makePublicUrl(qiniuKey);
-        console.log(`[七牛] UPLOAD-BUFFER ${qiniuKey} (${buf.length} bytes) → ${url}`);
-        resolve({ key: qiniuKey, url });
-      } else {
-        reject(new Error(`七牛上传失败 ${respInfo.statusCode}: ${JSON.stringify(respBody)}`));
-      }
-    });
-  });
-}
-
-/**
  * 从七牛云删除文件
  */
 async function deleteFile(qiniuKey) {
@@ -282,55 +257,6 @@ async function fileExists(qiniuKey) {
   }
 }
 
-/**
- * 把香港 VPS /uploads 目录全量推到七牛云
- */
-async function migrateLocalUploads() {
-  if (!isConfigured()) {
-    console.warn('[七牛] 未配置，跳过迁移');
-    return { total: 0, uploaded: 0, skipped: 0, errors: 0 };
-  }
-
-  const cloudFiles = await listFiles('uploads/').catch(() => []);
-  const cloudKeys = new Set(cloudFiles.map(f => f.key));
-
-  const localFiles = [];
-  function walk(dir, prefix) {
-    const entries = fs.readdirSync(dir);
-    for (const name of entries) {
-      const full = path.join(dir, name);
-      let stat;
-      try { stat = fs.statSync(full); } catch (e) { continue; }
-      if (stat.isDirectory()) walk(full, prefix + name + '/');
-      else if (['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif', '.svg'].includes(path.extname(name).toLowerCase())) {
-        localFiles.push({
-          relPath: '/' + prefix + name,
-          qiniuKey: prefix + name,
-          localFull: full
-        });
-      }
-    }
-  }
-  if (fs.existsSync(UPLOAD_DIR)) walk(UPLOAD_DIR, 'uploads/');
-
-  let uploaded = 0, skipped = 0, errors = 0;
-  console.log(`[七牛] 本地 ${localFiles.length} 张，七牛已有 ${cloudKeys.size} 张`);
-
-  for (const f of localFiles) {
-    if (cloudKeys.has(f.qiniuKey)) { skipped++; continue; }
-    try {
-      await uploadFile(f.localFull, f.qiniuKey);
-      uploaded++;
-    } catch (e) {
-      console.error(`[七牛] 迁移失败 ${f.qiniuKey}:`, e.message);
-      errors++;
-    }
-  }
-
-  console.log(`[七牛] 迁移完成: 上传 ${uploaded}, 跳过 ${skipped}, 失败 ${errors}`);
-  return { total: localFiles.length, uploaded, skipped, errors };
-}
-
 function guessMime(key) {
   const ext = path.extname(key).toLowerCase();
   const map = {
@@ -345,13 +271,11 @@ function guessMime(key) {
 module.exports = {
   isConfigured,
   uploadFile,
-  uploadBuffer,
   deleteFile,
   listFiles,
   fileExists,
-  migrateLocalUploads,
   guessMime,
   makePublicUrl,
   detectCorrectZone,
-  getBucketManager   // 暴露给 rebuild-index 用
+  getBucketManager
 };

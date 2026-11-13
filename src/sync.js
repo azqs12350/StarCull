@@ -66,38 +66,6 @@ async function deleteFile(relPathOrUrl) {
 }
 
 /**
- * 批量回填：确保 db.json 里所有相对路径都在七牛云上有文件
- */
-async function backfillAllImages(products) {
-  const items = products || [];
-  const tasks = items.map(p => p.image).filter(img => img && img.startsWith('/'));
-  if (!tasks.length) { log('[回填] 无需处理'); return { ok: 0, fail: 0 }; }
-
-  log(`[回填] 开始: ${tasks.length} 张待校验`);
-  const startAll = Date.now();
-  let ok = 0, fail = 0, push = 0;
-
-  for (let i = 0; i < tasks.length; i++) {
-    const relPath = tasks[i];
-    const key = relPath.replace(/^\//, '');
-    try {
-      const exists = await qiniu.fileExists(key).catch(() => false);
-      if (exists) { ok++; continue; }
-      const url = await pushFile(relPath);
-      if (url) { ok++; push++; } else { fail++; }
-    } catch (e) { fail++; }
-    // 每 10 张打印进度
-    if ((i + 1) % 10 === 0) {
-      log(`[回填] 进度: ${i + 1}/${tasks.length}  已推送 ${push}  失败 ${fail}`);
-    }
-  }
-
-  const sec = ((Date.now() - startAll) / 1000).toFixed(1);
-  log(`[回填] 完成: 成功 ${ok}  新推送 ${push}  失败 ${fail}  用时 ${sec}s`);
-  return { ok, fail };
-}
-
-/**
  * 增量同步：本地有但七牛上没有 → 推送；七牛上有但本地没有 → 删除
  */
 async function diffAndSync() {
@@ -209,4 +177,4 @@ async function diffAndSync() {
   };
 }
 
-module.exports = { pushFile, deleteFile, backfillAllImages, diffAndSync, isConfigured };
+module.exports = { pushFile, deleteFile, diffAndSync, isConfigured };

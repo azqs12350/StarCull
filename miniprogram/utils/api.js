@@ -164,7 +164,6 @@ function get(p, q) {
 }
 const post = (p, d) => request('POST',   p, d);
 const put  = (p, d) => request('PUT',    p, d);
-const del  = (p)    => request('DELETE',  p);
 
 // ========== Auth ==========
 function login(username, password) { return post('/api/login', { username, password }); }
@@ -212,7 +211,6 @@ function getDraws() {
 }
 function submitShipping(id, shipping) { return post('/api/draw/' + id + '/shipping', shipping); }
 function updateShipping(id, shipping) { return put('/api/draw/' + id + '/shipping', shipping); }
-function deleteShipping(id) { return del('/api/draw/' + id + '/shipping'); }
 
 // ========== Messages ==========
 function getMessages() { return get('/api/messages'); }
@@ -341,7 +339,6 @@ function callCloudBatchImages(urls) {
 // ====================================================================
 module.exports = {
   BASE_URL,
-  SERVER_BASE: BASE_URL,
   needsPatch,
   fullImgUrl,
   patchProducts,
@@ -356,7 +353,7 @@ module.exports = {
   wechatLogin, bindWechat, unbindWechat,
   starProduct, likeProduct, dislikeProduct,
   draw, upgradeDraw, cancelUpgrade, getDraws,
-  submitShipping, updateShipping, deleteShipping,
+  submitShipping, updateShipping,
   getMessages, sendMessage, markMessagesRead,
   getTransport
 };

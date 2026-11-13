@@ -12,8 +12,6 @@ try {
   console.warn('[image] sharp 未安装，图片转 JPG / 压缩功能不可用（npm install sharp）');
 }
 
-// 输出的最大宽度（不放大）
-const MAX_WIDTH = 1600;
 // 目标体积上限：350KB
 const TARGET_BYTES = 350 * 1024;
 
@@ -61,16 +59,4 @@ async function toJpg(input) {
   return { ...best, compressed: true };
 }
 
-/**
- * 读取图片元信息（宽度/高度/格式）
- */
-async function metadata(input) {
-  if (!sharp) return null;
-  try {
-    return await sharp(input).metadata();
-  } catch {
-    return null;
-  }
-}
-
-module.exports = { available, toJpg, metadata, MAX_WIDTH, TARGET_BYTES };
+module.exports = { available, toJpg, TARGET_BYTES };
