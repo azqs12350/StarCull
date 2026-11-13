@@ -21,6 +21,32 @@
     </view>
   </view>
 
+  <!-- 登录态校验中（有 token 但本地还没有用户缓存） -->
+  <view class="user-card guest" wx:elif="{{loadingUser}}">
+    <view class="avatar">
+      <text class="avatar-text">…</text>
+    </view>
+    <view class="user-info">
+      <view class="username">{{lang === 'zh' ? '正在恢复登录状态…' : 'Restoring session…'}}</view>
+      <view class="user-meta">
+        <text class="meta">{{lang === 'zh' ? '请稍候' : 'Please wait'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 校验失败且无本地缓存：提供重试，不把「未登录」当默认值 -->
+  <view class="user-card guest" wx:elif="{{sessionError}}" bindtap="onRetrySession">
+    <view class="avatar">
+      <text class="avatar-text">!</text>
+    </view>
+    <view class="user-info">
+      <view class="username">{{lang === 'zh' ? '网络异常，点击重试' : 'Network error. Tap to retry'}}</view>
+      <view class="user-meta">
+        <text class="meta">{{lang === 'zh' ? '登录状态暂未同步' : 'Session not verified'}}</text>
+      </view>
+    </view>
+  </view>
+
   <!-- 未登录状态 -->
   <view class="user-card guest" wx:else bindtap="goLogin">
     <view class="avatar">

@@ -27,7 +27,9 @@
       <text class="form-label">{{lang === 'zh' ? '密码' : 'Password'}}</text>
       <input class="form-input" placeholder="••••••••" password="{{true}}" value="{{loginPassword}}" bindinput="onLoginPassword" />
     </view>
-    <button class="submit-btn" bindtap="doLogin">{{lang === 'zh' ? '登录' : 'Sign in'}}</button>
+    <button class="submit-btn" bindtap="doLogin" disabled="{{submitting}}" loading="{{submitting}}">
+      {{submitting ? (lang === 'zh' ? '登录中...' : 'Signing in...') : (lang === 'zh' ? '登录' : 'Sign in')}}
+    </button>
     <view class="form-extra">
       <text class="link" bindtap="setMode" data-mode="recover-question">{{lang === 'zh' ? '忘记密码？' : 'Forgot password?'}}</text>
     </view>
@@ -43,9 +45,9 @@
     </view>
 
     <!-- 微信一键登录 -->
-    <button class="wechat-btn" bindtap="doWechatLogin">
+    <button class="wechat-btn" bindtap="doWechatLogin" disabled="{{submitting}}" loading="{{submitting}}">
       <text class="wechat-icon">💬</text>
-      <text>{{lang === 'zh' ? '微信一键登录' : 'Sign in with WeChat'}}</text>
+      <text>{{submitting ? (lang === 'zh' ? '登录中...' : 'Signing in...') : (lang === 'zh' ? '微信一键登录' : 'Sign in with WeChat')}}</text>
     </button>
   </view>
 
@@ -88,7 +90,9 @@
       <text wx:else>⚠️ This is your ONLY way to recover password.</text>
     </view>
 
-    <button class="submit-btn" bindtap="doRegister">{{lang === 'zh' ? '注册' : 'Register'}}</button>
+    <button class="submit-btn" bindtap="doRegister" disabled="{{submitting}}" loading="{{submitting}}">
+      {{submitting ? (lang === 'zh' ? '注册中...' : 'Registering...') : (lang === 'zh' ? '注册' : 'Register')}}
+    </button>
     <view class="form-extra">
       <text class="link-sub" bindtap="setMode" data-mode="login">
         {{lang === 'zh' ? '已有账号？去登录' : 'Have an account? Sign in'}}

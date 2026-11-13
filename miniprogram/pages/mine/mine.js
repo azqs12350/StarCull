@@ -14,7 +14,9 @@ Page({
     secA: '',
     editingPassword: false,
     oldPassword: '',
-    newPassword: ''
+    newPassword: '',
+    loadingUser: false,
+    sessionError: false
   },
 
   onShow() {
@@ -24,26 +26,72 @@ Page({
     wx.setNavigationBarTitle({ title: lang === 'en' ? 'Mine' : '我的' });
 
     if (!auth.isLoggedIn()) {
-      this.setData({ user: null });
+      this.setData({ user: null, loadingUser: false, sessionError: false });
       return;
     }
+
+    // 先用全局/本地缓存的用户信息立即渲染，避免先闪「未登录」
+    const cached = app.globalData.user || auth.getUser();
+    if (cached) {
+      this.setData({
+        user: cached,
+        points: cached.points || 0,
+        hasSecurityQuestion: !!cached.hasSecurityQuestion,
+        loadingUser: false,
+        sessionError: false
+      });
+    } else {
+      this.setData({ loadingUser: true, sessionError: false });
+    }
+
+    // 后台校验 session：成功则刷新，401 才切回未登录，网络异常保留缓存
     this.loadUser();
   },
 
   async loadUser() {
+    const token = auth.getToken();
     try {
       const data = await api.tokenSession();
+      // 请求期间登录态变化（重新登录/登出）则丢弃旧响应
+      if (auth.getToken() !== token) return;
       const app = getApp();
       app.globalData.user = data.user;
+      auth.setUser(data.user);
       this.setData({
         user: data.user,
         points: data.user ? data.user.points : 0,
-        hasSecurityQuestion: data.user ? data.user.hasSecurityQuestion : false
+        hasSecurityQuestion: data.user ? data.user.hasSecurityQuestion : false,
+        loadingUser: false,
+        sessionError: false
       });
     } catch (e) {
-      auth.clearToken();
-      this.setData({ user: null });
+      const app = getApp();
+      // api.js 遇到 401 会清 token；token 还在说明是网络/超时问题
+      if (!auth.isLoggedIn()) {
+        app.globalData.user = null;
+        this.setData({ user: null, loadingUser: false, sessionError: false });
+        return;
+      }
+
+      const cached = app.globalData.user || auth.getUser();
+      if (cached) {
+        this.setData({
+          user: cached,
+          points: cached.points || 0,
+          hasSecurityQuestion: !!cached.hasSecurityQuestion,
+          loadingUser: false,
+          sessionError: false
+        });
+      } else {
+        this.setData({ loadingUser: false, sessionError: true });
+      }
+      console.warn('[mine] session check failed, keep cached state:', e.message);
     }
+  },
+
+  onRetrySession() {
+    this.setData({ loadingUser: true, sessionError: false });
+    this.loadUser();
   },
 
   switchLang() {
@@ -144,6 +192,7 @@ Page({
             icon: 'success'
           });
           getApp().globalData.user = data.user;
+          auth.setUser(data.user);
           this.setData({ user: data.user });
         } catch (e) { wx.hideLoading(); }
       },
@@ -168,6 +217,7 @@ Page({
           wx.hideLoading();
           wx.showToast({ title: lang === 'zh' ? '已解绑' : 'Unbound', icon: 'success' });
           getApp().globalData.user = data.user;
+          auth.setUser(data.user);
           this.setData({ user: data.user });
         } catch (e) { wx.hideLoading(); }
       }

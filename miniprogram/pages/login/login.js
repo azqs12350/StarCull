@@ -21,7 +21,10 @@ Page({
     recUsername: '',
     recQuestion: '',
     recAnswer: '',
-    recNewPassword: ''
+    recNewPassword: '',
+
+    // 提交中：禁止重复点击，按钮显示 loading
+    submitting: false
   },
 
   onLoad() {
@@ -42,6 +45,7 @@ Page({
   },
 
   setMode(e) {
+    if (this.data.submitting) return;
     // 微信 bindtap 传事件对象，从 dataset 拿 data-mode 的值
     const mode = e.currentTarget.dataset.mode;
     console.log('[login] setMode →', mode);
@@ -54,40 +58,50 @@ Page({
   onLoginPassword(e) { this.setData({ loginPassword: e.detail.value }); },
 
   async doLogin() {
+    if (this.data.submitting) return;
     if (!this.data.loginUsername.trim() || !this.data.loginPassword) {
       wx.showToast({ title: this.data.lang === 'zh' ? '请填写完整' : 'Fill all fields', icon: 'none' });
       return;
     }
+
+    const lang = this.data.lang;
+    this.setData({ submitting: true });
     try {
-      wx.showLoading({ title: this.data.lang === 'zh' ? '登录中...' : 'Signing in...' });
       const res = await api.login(this.data.loginUsername.trim(), this.data.loginPassword);
-      wx.hideLoading();
+      // 立即落 token + 用户缓存 + 全局态，页面随后直接读缓存
       getApp().setAuth(res.user, res.products, res.draw, res.token);
       wx.showToast({
-        title: this.data.lang === 'zh' ? '登录成功' : 'Welcome back',
+        title: lang === 'zh' ? '登录成功' : 'Welcome back',
         icon: 'success',
         duration: 1500
       });
+      // 成功后保持 submitting，直到切页，避免切页前重复提交
       setTimeout(() => wx.switchTab({ url: '/pages/index/index' }), 500);
     } catch (e) {
-      wx.hideLoading();
+      this.setData({ submitting: false });
+      wx.showToast({
+        title: (e && e.message) || (lang === 'zh' ? '登录失败，请重试' : 'Sign-in failed'),
+        icon: 'none',
+        duration: 2500
+      });
     }
   },
 
   // ---------- WeChat one-tap login ----------
 
   doWechatLogin() {
+    if (this.data.submitting) return;
     const lang = this.data.lang;
+    this.setData({ submitting: true });
     wx.login({
       success: async (wxRes) => {
         if (!wxRes.code) {
+          this.setData({ submitting: false });
           wx.showToast({ title: lang === 'zh' ? '获取微信登录凭证失败' : 'Failed to get WeChat code', icon: 'none' });
           return;
         }
         try {
-          wx.showLoading({ title: lang === 'zh' ? '登录中...' : 'Signing in...' });
           const res = await api.wechatLogin(wxRes.code);
-          wx.hideLoading();
           getApp().setAuth(res.user, res.products, res.draw, res.token);
 
           const welcome = res.isNew
@@ -96,10 +110,16 @@ Page({
           wx.showToast({ title: welcome, icon: 'success', duration: 1500 });
           setTimeout(() => wx.switchTab({ url: '/pages/index/index' }), 500);
         } catch (e) {
-          wx.hideLoading();
+          this.setData({ submitting: false });
+          wx.showToast({
+            title: (e && e.message) || (lang === 'zh' ? '微信登录失败，请重试' : 'WeChat sign-in failed'),
+            icon: 'none',
+            duration: 2500
+          });
         }
       },
       fail: () => {
+        this.setData({ submitting: false });
         wx.showToast({ title: lang === 'zh' ? '微信登录调用失败' : 'wx.login failed', icon: 'none' });
       }
     });
@@ -118,6 +138,7 @@ Page({
   onRegSecA(e) { this.setData({ regSecA: e.detail.value }); },
 
   async doRegister() {
+    if (this.data.submitting) return;
     var regUsername = this.data.regUsername;
     var regPassword = this.data.regPassword;
     var regSecQ = this.data.regSecQ;
@@ -126,18 +147,26 @@ Page({
       wx.showToast({ title: this.data.lang === 'zh' ? '请填写完整所有字段' : 'Fill all fields', icon: 'none' });
       return;
     }
+
+    const lang = this.data.lang;
+    this.setData({ submitting: true });
     try {
-      wx.showLoading({ title: this.data.lang === 'zh' ? '注册中...' : 'Registering...' });
       const res = await api.register(regUsername.trim(), regPassword, regSecQ.trim(), regSecA);
-      wx.hideLoading();
       getApp().setAuth(res.user, res.products, res.draw, res.token);
       wx.showToast({
-        title: this.data.lang === 'zh' ? '注册成功！' : 'Welcome!',
+        title: lang === 'zh' ? '注册成功！' : 'Welcome!',
         icon: 'success',
         duration: 1500
       });
       setTimeout(() => wx.switchTab({ url: '/pages/index/index' }), 500);
-    } catch (e) { wx.hideLoading(); }
+    } catch (e) {
+      this.setData({ submitting: false });
+      wx.showToast({
+        title: (e && e.message) || (lang === 'zh' ? '注册失败，请重试' : 'Registration failed'),
+        icon: 'none',
+        duration: 2500
+      });
+    }
   },
 
   // ---------- Recover ----------
