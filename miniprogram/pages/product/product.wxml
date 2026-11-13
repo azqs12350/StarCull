@@ -18,12 +18,6 @@
       <text class="tag">{{lang === 'en' ? (product.seriesEn || product.seriesZh) : (product.seriesZh || product.seriesEn)}}</text>
     </view>
 
-    <view class="stats">
-      <text class="stat">★ {{product.count || 0}}</text>
-      <text class="stat stat-like">👍 {{product.likeCount || 0}}</text>
-      <text class="stat stat-dislike">👎 {{product.dislikeCount || 0}}</text>
-    </view>
-
     <view class="divider" />
 
     <!-- 作品说明 -->
@@ -43,6 +37,7 @@
         <text wx:if="{{product.starred}}">{{lang === 'zh' ? '已收藏' : 'Collected'}}</text>
         <text wx:else>{{lang === 'zh' ? '收藏' : 'Collect'}}</text>
       </text>
+      <text class="action-count">{{product.count || 0}}</text>
     </view>
     <view
       class="action-btn {{product.liked ? 'on-like' : ''}}"
@@ -53,6 +48,7 @@
         <text wx:if="{{product.liked}}">{{lang === 'zh' ? '已点赞' : 'Liked'}}</text>
         <text wx:else>{{lang === 'zh' ? '点赞' : 'Like'}}</text>
       </text>
+      <text class="action-count">{{product.likeCount || 0}}</text>
     </view>
     <view
       class="action-btn {{product.disliked ? 'on-dislike' : ''}}"
@@ -63,6 +59,7 @@
         <text wx:if="{{product.disliked}}">{{lang === 'zh' ? '已踩' : 'Disliked'}}</text>
         <text wx:else>{{lang === 'zh' ? '踩' : 'Dislike'}}</text>
       </text>
+      <text class="action-count">{{product.dislikeCount || 0}}</text>
     </view>
   </view>
 

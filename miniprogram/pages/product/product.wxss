@@ -1,7 +1,9 @@
 /* pages/product/product.wxss */
 
 .page {
-  padding-bottom: 180rpx;
+  /* 给底部固定 CTA 留出足够空间，并避开 iPhone 底部安全区 */
+  padding-bottom: 220rpx;
+  padding-bottom: calc(220rpx + env(safe-area-inset-bottom));
 }
 
 .hero-img {
@@ -29,25 +31,6 @@
 
 .series-row {
   margin-top: 16rpx;
-}
-
-.stats {
-  margin-top: 18rpx;
-  display: flex;
-  gap: 20rpx;
-}
-
-.stat {
-  font-size: 24rpx;
-  color: #666666;
-}
-
-.stat-like {
-  color: #d04759;
-}
-
-.stat-dislike {
-  color: #999999;
 }
 
 .divider {
@@ -97,9 +80,16 @@
   margin-top: 8rpx;
 }
 
+.action-count {
+  font-size: 20rpx;
+  color: #999999;
+  margin-top: 4rpx;
+}
+
 .draw-bar {
   position: fixed;
   bottom: 24rpx;
+  bottom: calc(24rpx + env(safe-area-inset-bottom));
   left: 24rpx;
   right: 24rpx;
   height: 96rpx;
