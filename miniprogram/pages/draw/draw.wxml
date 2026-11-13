@@ -24,7 +24,7 @@
     <view class="draw-frame" bindtap="openAddrFromResult">
       <block wx:if="{{rolling && rollImage}}">
         <image
-          class="draw-img"
+          class="draw-img {{lockFrame ? 'lock-in' : ''}}"
           src="{{rollImage}}"
           mode="aspectFill"
         />
@@ -204,6 +204,24 @@
       mode="aspectFit"
       catchtap="noop"
     />
+    <!-- 收藏 / 点赞 / 点踩：复用首页接口，互斥与积分由后端决定 -->
+    <view class="prize-preview-actions" catchtap="noop">
+      <view class="pp-action {{prizeResult.product.starred ? 'pp-on' : ''}}" catchtap="onPrizeStar">
+        <text class="pp-ico">{{prizeResult.product.starred ? '★' : '☆'}}</text>
+        <text class="pp-txt">{{lang === 'zh' ? (prizeResult.product.starred ? '已收藏' : '收藏') : (prizeResult.product.starred ? 'Saved' : 'Save')}}</text>
+        <text class="pp-cnt">{{prizeResult.product.count || 0}}</text>
+      </view>
+      <view class="pp-action {{prizeResult.product.liked ? 'pp-on' : ''}}" catchtap="onPrizeLike">
+        <text class="pp-ico">👍</text>
+        <text class="pp-txt">{{lang === 'zh' ? '点赞' : 'Like'}}</text>
+        <text class="pp-cnt">{{prizeResult.product.likeCount || 0}}</text>
+      </view>
+      <view class="pp-action {{prizeResult.product.disliked ? 'pp-on' : ''}}" catchtap="onPrizeDislike">
+        <text class="pp-ico">👎</text>
+        <text class="pp-txt">{{lang === 'zh' ? '点踩' : 'Dislike'}}</text>
+        <text class="pp-cnt">{{prizeResult.product.dislikeCount || 0}}</text>
+      </view>
+    </view>
     <view class="prize-preview-close" catchtap="closePrizePreview">✕</view>
     <view class="prize-preview-tip">{{lang === 'zh' ? '点击空白处关闭' : 'Tap outside to close'}}</view>
   </view>

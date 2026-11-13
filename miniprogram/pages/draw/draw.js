@@ -13,10 +13,11 @@ const DRAW_CACHE_LIMIT = 30;
 // 后台刷新提示的延迟：请求在此时间内完成就不显示，避免提示一闪而过
 const REFRESH_HINT_DELAY = 250;
 
-// 抽奖滚动：固定约 6 秒，帧间隔从 40ms 逐步拉长到 280ms（先快后慢）
-const ROLL_DURATION_MS = 6000;
+// 抽奖滚动：30 帧、总时长约 9.2 秒，帧间隔按二次方从 40ms 拉长到 800ms（连续无断层）
+const ROLL_FRAMES = 30;
 const ROLL_MIN_DELAY = 40;
-const ROLL_MAX_DELAY = 280;
+const ROLL_MAX_DELAY = 800;
+const LOCK_FADE_MS = 500;
 
 Page({
   data: {
@@ -35,6 +36,7 @@ Page({
     editingAddress: false,
     previewVisible: false,
     previewImage: '',
+    lockFrame: false,
     prizeResult: null,  // 最近一次抽奖结果
     lang: 'zh',
     noneCount: 0,
@@ -264,6 +266,97 @@ Page({
     this.setData({ previewVisible: false, previewImage: '' });
   },
 
+  // 放大层里的收藏 / 点赞 / 点踩：复用首页同一组接口，互斥与积分规则全由后端决定
+  async onPrizeStar() {
+    var p = this.data.prizeResult && this.data.prizeResult.product;
+    if (!p || !p.id || !auth.isLoggedIn()) return;
+    if (this._statsPending) return;
+    this._statsPending = true;
+    try {
+      var res = await api.starProduct(p.id);
+      this._applyProductStats(p.id, { starred: res.starred, count: res.count });
+    } catch (e) {
+      this._toastActionFailed();
+    } finally {
+      this._statsPending = false;
+    }
+  },
+
+  async onPrizeLike() {
+    var p = this.data.prizeResult && this.data.prizeResult.product;
+    if (!p || !p.id || !auth.isLoggedIn()) return;
+    if (this._statsPending) return;
+    this._statsPending = true;
+    try {
+      var res = await api.likeProduct(p.id);
+      this._applyProductStats(p.id, {
+        liked: res.liked,
+        disliked: res.disliked,
+        likeCount: res.likeCount,
+        dislikeCount: res.dislikeCount
+      });
+    } catch (e) {
+      this._toastActionFailed();
+    } finally {
+      this._statsPending = false;
+    }
+  },
+
+  async onPrizeDislike() {
+    var p = this.data.prizeResult && this.data.prizeResult.product;
+    if (!p || !p.id || !auth.isLoggedIn()) return;
+    if (this._statsPending) return;
+    this._statsPending = true;
+    try {
+      var res = await api.dislikeProduct(p.id);
+      this._applyProductStats(p.id, {
+        liked: res.liked,
+        disliked: res.disliked,
+        likeCount: res.likeCount,
+        dislikeCount: res.dislikeCount
+      });
+    } catch (e) {
+      this._toastActionFailed();
+    } finally {
+      this._statsPending = false;
+    }
+  },
+
+  _toastActionFailed() {
+    wx.showToast({
+      title: this.data.lang === 'zh' ? '操作失败，请重试' : 'Action failed, try again',
+      icon: 'none'
+    });
+  },
+
+  // 同步结果区、列表和全局数据，返回首页时状态一致
+  _applyProductStats(id, fields) {
+    var keys = Object.keys(fields);
+    var patch = {};
+
+    var prize = this.data.prizeResult && this.data.prizeResult.product;
+    if (prize && prize.id === id) {
+      for (var a = 0; a < keys.length; a++) patch['prizeResult.product.' + keys[a]] = fields[keys[a]];
+    }
+
+    var list = this.data.products || [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id !== id) continue;
+      for (var b = 0; b < keys.length; b++) patch['products[' + i + '].' + keys[b]] = fields[keys[b]];
+      break;
+    }
+
+    if (Object.keys(patch).length) this.setData(patch);
+
+    var app = getApp();
+    var globals = (app && app.globalData && app.globalData.products) || [];
+    for (var g = 0; g < globals.length; g++) {
+      if (globals[g].id !== id) continue;
+      for (var c = 0; c < keys.length; c++) globals[g][keys[c]] = fields[keys[c]];
+      break;
+    }
+  },
+
   onHide() {
     // 切走时收起放大层，回来仍停留在结果界面
     if (this.data.previewVisible) this.setData({ previewVisible: false });
@@ -315,7 +408,7 @@ Page({
     this.setData({ drawing: true });
 
     try {
-      // 抽奖请求与滚动并行：点击后立即请求，滚动固定跑满 6 秒
+      // 抽奖请求与滚动并行：点击后立即请求，滚动固定跑满约 9.2 秒
       this._rollCanStop = false;
       this._pendingPrizeImage = '';
       const drawPromise = api.draw();
@@ -330,8 +423,8 @@ Page({
         this._rollCanStop = true;
       });
 
-      // 兜底：6 秒后若结果图仍未就绪，最多再等 2 秒就按现有方式收尾
-      setTimeout(() => { this._rollCanStop = true; }, ROLL_DURATION_MS + 2000);
+      // 兜底：正常 8 秒收尾；若结果图仍未就绪，最多再等 2 秒
+      setTimeout(() => { this._rollCanStop = true; }, 10000);
 
       await this.startRolling();
       const result = await drawPromise;
@@ -363,7 +456,7 @@ Page({
     return frames;
   },
 
-  // 抽奖动画：固定跑满 6 秒，先快后慢，最后一帧落到中奖图（若已就绪）
+  // 抽奖动画：30 帧、约 9.2 秒，先快后慢，收尾几帧接近停顿，最后淡入定格中奖图
   async startRolling() {
     const frames = this._rollFramesFromCache();
     if (!frames.length) {
@@ -372,18 +465,18 @@ Page({
     }
 
     return new Promise((resolve) => {
-      const startAt = Date.now();
       let frame = 0;
-      this.setData({ rolling: true, rollImage: frames[0].image });
+      this.setData({ rolling: true, rollImage: frames[0].image, lockFrame: false });
 
       const tick = () => {
-        const elapsed = Date.now() - startAt;
-        if (elapsed >= ROLL_DURATION_MS && this._rollCanStop !== false) {
-          const winnerImage = this._pendingPrizeImage || '';
-          const patch = { rolling: false };
-          if (winnerImage) patch.rollImage = winnerImage;
-          this.setData(patch);
-          resolve();
+        if (frame >= ROLL_FRAMES && this._rollCanStop !== false) {
+          // 定格：最后一帧平滑过渡到中奖图（淡入 + 轻微缩放），再结束滚动
+          const winnerImage = this._pendingPrizeImage || frames[frame % frames.length].image;
+          this.setData({ rollImage: winnerImage, lockFrame: true });
+          setTimeout(() => {
+            this.setData({ rolling: false, lockFrame: false });
+            resolve();
+          }, LOCK_FADE_MS);
           return;
         }
 
@@ -391,10 +484,10 @@ Page({
         const idx = frame % frames.length;
         this.setData({ rollImage: frames[idx].image });
 
-        const progress = Math.min(elapsed / ROLL_DURATION_MS, 1);
+        // 帧间隔按二次方增长：40ms → 800ms，连续单调，无收尾断层
+        const progress = Math.min(frame / ROLL_FRAMES, 1);
         const delay = Math.round(ROLL_MIN_DELAY + (ROLL_MAX_DELAY - ROLL_MIN_DELAY) * progress * progress);
-        const remaining = Math.max(ROLL_DURATION_MS - elapsed, 0);
-        setTimeout(tick, Math.max(16, Math.min(delay, remaining || delay)));
+        setTimeout(tick, delay);
       };
       tick();
     });
