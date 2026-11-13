@@ -248,12 +248,28 @@ Page({
     for (var i = 0; i < this.data.draws.length; i++) {
       if (this.data.draws[i].id === id) { item = this.data.draws[i]; break; }
     }
+    this._showAddressFor(item);
+  },
+
+  // 点击中奖作品图：与首页一致，进入作品详情页看大图
+  onPrizeImageTap() {
+    var p = this.data.prizeResult && this.data.prizeResult.product;
+    if (!p || !p.id) return;
+    wx.navigateTo({ url: '/pages/product/product?id=' + p.id });
+  },
+
+  // 点击中奖结果图以外的区域：填收货地址
+  openAddrFromResult() {
+    if (this.data.rolling || this.data.drawing) return;
+    this._showAddressFor(this.data.prizeResult);
+  },
+
+  _showAddressFor(item) {
     if (!item) return;
-    if (item.status !== 'pending' && item.status !== 'preparing') {
+    if (item.status && item.status !== 'pending' && item.status !== 'preparing') {
       wx.showToast({ title: this.data.lang === 'zh' ? '状态不可修改' : 'Cannot edit at this stage', icon: 'none' });
       return;
     }
-    var self = this;
     var initAddr = { name: '', phone: '', email: '', address1: '', address2: '', city: '', state: '', zip: '', country: '' };
     if (item.shipping) {
       initAddr = Object.assign({}, initAddr, item.shipping);
@@ -288,8 +304,24 @@ Page({
     this.setData({ drawing: true });
 
     try {
+      // 抽奖请求与滚动并行：结果返回后立刻开始转结果图，滚动等它就绪再停
+      this._rollCanStop = false;
+      const drawPromise = api.draw();
+      const imageReady = drawPromise.then((r) => {
+        if (r && r.draw && r.draw.product && r.draw.product.image) {
+          return this._prepareResultImage(r.draw.id, r.draw.product.image);
+        }
+        return null;
+      }).catch(() => null).then(() => {
+        this._rollCanStop = true;
+      });
+
+      // 兜底：结果图迟迟转不好也不能无限滚动
+      setTimeout(() => { this._rollCanStop = true; }, 4000);
+
       await this.startRolling();
-      const result = await api.draw();
+      const result = await drawPromise;
+      await Promise.race([imageReady, new Promise((r) => setTimeout(r, 1500))]);
       this.stopRolling(result.draw, result.points, free);
     } catch (e) {
       this.stopRolling(null);
@@ -416,17 +448,18 @@ Page({
     return new Promise((resolve) => {
       this.setData({ rolling: true, rollImage: frames[0].image });
       let frame = 0;
-      const totalFrames = 18;
+      const minFrames = 18;
       const tick = () => {
         frame++;
-        if (frame >= totalFrames) {
+        const idx = frame % frames.length;
+        this.setData({ rollImage: frames[idx].image });
+        // 至少滚够 18 帧，并且结果图就绪后才停，避免结果区先出现空白
+        if (frame >= minFrames && this._rollCanStop !== false) {
           this.setData({ rolling: false });
           resolve();
           return;
         }
-        const speed = 40 + frame * 18; // 逐渐变慢
-        const idx = frame % frames.length;
-        this.setData({ rollImage: frames[idx].image });
+        const speed = Math.min(40 + frame * 18, 160); // 逐渐变慢，最长 160ms 一帧
         setTimeout(tick, speed);
       };
       tick();
@@ -484,21 +517,26 @@ Page({
   },
 
   // 结果图补齐：把中奖作品的图转成 base64 后替换当前展示
+  // 返回 Promise，滚动动画可等它就绪后再停
   _prepareResultImage(resultId, rawImage) {
-    if (!resultId || !rawImage || rawImage.indexOf('data:') === 0) return;
-    if (!api.needsPatch(rawImage)) return;
+    if (!rawImage) return Promise.resolve('');
+    if (rawImage.indexOf('data:') === 0) return Promise.resolve(rawImage);
+    if (!api.needsPatch(rawImage)) return Promise.resolve(rawImage);
 
     var cached = this._rollGet(rawImage);
     if (cached) {
       this._applyResultImage(resultId, cached);
-      return;
+      return Promise.resolve(cached);
     }
-    api.patchImageUrls([rawImage], (map) => {
+    return api.patchImageUrls([rawImage], (map) => {
       var url = map[rawImage];
       if (!url) return;
       this._rollCacheSet(rawImage, url);
       this._applyResultImage(resultId, url);
-    }).catch((e) => console.warn('[draw] result image failed:', e.message));
+    }).then(() => this._rollGet(rawImage) || '').catch((e) => {
+      console.warn('[draw] result image failed:', e.message);
+      return '';
+    });
   },
 
   _applyResultImage(resultId, url) {

@@ -21,7 +21,7 @@
 
   <!-- 抽奖动画区 -->
   <view class="draw-hero">
-    <view class="draw-frame">
+    <view class="draw-frame" bindtap="openAddrFromResult">
       <block wx:if="{{rolling && rollImage}}">
         <image
           class="draw-img"
@@ -34,6 +34,7 @@
           class="draw-img"
           src="{{prizeResult.product.image}}"
           mode="aspectFill"
+          catchtap="onPrizeImageTap"
         />
         <view class="prize-tag">
           <text wx:if="{{prizeResult.prizeType === 'framed'}}">🖼️ {{lang === 'zh' ? '画框作品' : 'Framed'}}</text>
