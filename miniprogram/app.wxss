@@ -163,3 +163,36 @@ page {
   border-radius: 12rpx;
   background: #f0f0ec;
 }
+
+/* ---------- 全局点击反馈 ---------- */
+
+/* 互动按钮（收藏/点赞/点踩）：按下缩放，选中弹跳 */
+.ui-interact {
+  transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
+}
+
+.ui-press {
+  transform: scale(0.92);
+  opacity: 0.86;
+}
+
+.ui-on {
+  animation: ui-pop 0.36s ease-out;
+}
+
+@keyframes ui-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.16); }
+  65% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+/* 普通按钮/可点列表项：克制的按压反馈 */
+.ui-tap {
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+
+.ui-press-soft {
+  transform: scale(0.97);
+  opacity: 0.86;
+}

@@ -125,7 +125,7 @@
           <text wx:else>⚠️ This is your ONLY way to recover password.</text>
         </view>
 
-        <button class="save-btn" bindtap="saveSecurity">{{lang === 'zh' ? '保存' : 'Save'}}</button>
+        <button class="save-btn ui-tap" hover-class="ui-press-soft" bindtap="saveSecurity">{{lang === 'zh' ? '保存' : 'Save'}}</button>
       </view>
     </view>
   </view>

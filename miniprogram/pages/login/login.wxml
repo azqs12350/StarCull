@@ -27,7 +27,7 @@
       <text class="form-label">{{lang === 'zh' ? '密码' : 'Password'}}</text>
       <input class="form-input" placeholder="••••••••" password="{{true}}" value="{{loginPassword}}" bindinput="onLoginPassword" />
     </view>
-    <button class="submit-btn" bindtap="doLogin" disabled="{{submitting}}" loading="{{submitting}}">
+    <button class="submit-btn ui-tap" hover-class="ui-press-soft" bindtap="doLogin" disabled="{{submitting}}" loading="{{submitting}}">
       {{submitting ? (lang === 'zh' ? '登录中...' : 'Signing in...') : (lang === 'zh' ? '登录' : 'Sign in')}}
     </button>
     <view class="form-extra">
@@ -45,7 +45,7 @@
     </view>
 
     <!-- 微信一键登录 -->
-    <button class="wechat-btn" bindtap="doWechatLogin" disabled="{{submitting}}" loading="{{submitting}}">
+    <button class="wechat-btn ui-tap" hover-class="ui-press-soft" bindtap="doWechatLogin" disabled="{{submitting}}" loading="{{submitting}}">
       <text class="wechat-icon">💬</text>
       <text>{{submitting ? (lang === 'zh' ? '登录中...' : 'Signing in...') : (lang === 'zh' ? '微信一键登录' : 'Sign in with WeChat')}}</text>
     </button>
@@ -90,7 +90,7 @@
       <text wx:else>⚠️ This is your ONLY way to recover password.</text>
     </view>
 
-    <button class="submit-btn" bindtap="doRegister" disabled="{{submitting}}" loading="{{submitting}}">
+    <button class="submit-btn ui-tap" hover-class="ui-press-soft" bindtap="doRegister" disabled="{{submitting}}" loading="{{submitting}}">
       {{submitting ? (lang === 'zh' ? '注册中...' : 'Registering...') : (lang === 'zh' ? '注册' : 'Register')}}
     </button>
     <view class="form-extra">
@@ -106,7 +106,7 @@
       <text class="form-label">{{lang === 'zh' ? '你的账号' : 'Your username'}}</text>
       <input class="form-input" placeholder="your-name" value="{{recUsername}}" bindinput="onRecUsername" />
     </view>
-    <button class="submit-btn" bindtap="doRecoverNext">{{lang === 'zh' ? '下一步' : 'Next'}}</button>
+    <button class="submit-btn ui-tap" hover-class="ui-press-soft" bindtap="doRecoverNext">{{lang === 'zh' ? '下一步' : 'Next'}}</button>
     <view class="form-extra">
       <text class="link-sub" bindtap="setMode" data-mode="login">{{lang === 'zh' ? '← 返回登录' : '← Back to sign in'}}</text>
     </view>
@@ -126,7 +126,7 @@
       <text class="form-label">{{lang === 'zh' ? '新密码（至少 6 位）' : 'New password (min. 6 chars)'}}</text>
       <input class="form-input" placeholder="••••••••" password="{{true}}" value="{{recNewPassword}}" bindinput="onRecNewPassword" />
     </view>
-    <button class="submit-btn" bindtap="doRecoverReset">{{lang === 'zh' ? '重置密码' : 'Reset password'}}</button>
+    <button class="submit-btn ui-tap" hover-class="ui-press-soft" bindtap="doRecoverReset">{{lang === 'zh' ? '重置密码' : 'Reset password'}}</button>
     <view class="form-extra">
       <text class="link-sub" bindtap="setMode" data-mode="login">{{lang === 'zh' ? '← 返回登录' : '← Back to sign in'}}</text>
     </view>

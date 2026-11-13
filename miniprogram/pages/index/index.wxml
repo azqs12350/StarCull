@@ -8,7 +8,7 @@
       <text class="brand-sub" wx:if="{{lang === 'zh'}}">工作室作品甄选</text>
       <text class="brand-sub" wx:else>Studio Selection</text>
     </view>
-    <view class="lang-btn" bindtap="switchLang">
+    <view class="lang-btn ui-tap" hover-class="ui-press-soft" bindtap="switchLang">
       <text wx:if="{{lang === 'zh'}}">EN</text>
       <text wx:else>中文</text>
     </view>
@@ -19,7 +19,8 @@
     <view
       wx:for="{{categories}}"
       wx:key="id"
-      class="cat-pill {{activeCategory === item.id ? 'cat-pill-on' : ''}}"
+      class="cat-pill ui-tap {{activeCategory === item.id ? 'cat-pill-on' : ''}}"
+      hover-class="ui-press-soft"
       data-id="{{item.id}}"
       bindtap="onCategoryTap"
     >
@@ -39,7 +40,8 @@
     <view
       wx:for="{{products}}"
       wx:key="id"
-      class="grid-item"
+      class="grid-item ui-tap"
+      hover-class="ui-press-soft"
       data-id="{{item.id}}"
       bindtap="goDetail"
     >
@@ -47,15 +49,15 @@
       <view class="grid-info">
         <view class="grid-title">{{lang === 'en' ? (item.titleEn || item.titleZh) : (item.titleZh || item.titleEn)}}</view>
         <view class="grid-actions" catchtap="noop">
-          <view class="ga-btn {{item.starred ? 'ga-star-on' : ''}}" data-id="{{item.id}}" bindtap="onStar">
+          <view class="ga-btn ui-interact {{item.starred ? 'ga-star-on ui-on' : ''}}" hover-class="ui-press" data-id="{{item.id}}" bindtap="onStar">
             <text class="ga-ico">{{item.starred ? '★' : '☆'}}</text>
             <text class="ga-num">{{item.count || 0}}</text>
           </view>
-          <view class="ga-btn {{item.liked ? 'ga-like-on' : ''}}" data-id="{{item.id}}" bindtap="onLike">
+          <view class="ga-btn ui-interact {{item.liked ? 'ga-like-on ui-on' : ''}}" hover-class="ui-press" data-id="{{item.id}}" bindtap="onLike">
             <text class="ga-ico">👍</text>
             <text class="ga-num">{{item.likeCount || 0}}</text>
           </view>
-          <view class="ga-btn {{item.disliked ? 'ga-dislike-on' : ''}}" data-id="{{item.id}}" bindtap="onDislike">
+          <view class="ga-btn ui-interact {{item.disliked ? 'ga-dislike-on ui-on' : ''}}" hover-class="ui-press" data-id="{{item.id}}" bindtap="onDislike">
             <text class="ga-ico">👎</text>
             <text class="ga-num">{{item.dislikeCount || 0}}</text>
           </view>

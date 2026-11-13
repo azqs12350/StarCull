@@ -29,7 +29,8 @@
   <!-- 互动按钮区 -->
   <view class="actions">
     <view
-      class="action-btn {{product.starred ? 'on' : ''}}"
+      class="action-btn ui-interact {{product.starred ? 'on ui-on' : ''}}"
+      hover-class="ui-press"
       bindtap="onStar"
     >
       <text class="action-ico">{{product.starred ? '★' : '☆'}}</text>
@@ -40,7 +41,8 @@
       <text class="action-count">{{product.count || 0}}</text>
     </view>
     <view
-      class="action-btn {{product.liked ? 'on-like' : ''}}"
+      class="action-btn ui-interact {{product.liked ? 'on-like ui-on' : ''}}"
+      hover-class="ui-press"
       bindtap="onLike"
     >
       <text class="action-ico">👍</text>
@@ -51,7 +53,8 @@
       <text class="action-count">{{product.likeCount || 0}}</text>
     </view>
     <view
-      class="action-btn {{product.disliked ? 'on-dislike' : ''}}"
+      class="action-btn ui-interact {{product.disliked ? 'on-dislike ui-on' : ''}}"
+      hover-class="ui-press"
       bindtap="onDislike"
     >
       <text class="action-ico">👎</text>
@@ -64,7 +67,7 @@
   </view>
 
   <!-- 去抽奖入口 -->
-  <view class="draw-bar" bindtap="goDraw">
+  <view class="draw-bar ui-tap" hover-class="ui-press-soft" bindtap="goDraw">
     <text class="draw-bar-text">{{lang === 'zh' ? '🎰 去抽奖，把这件作品带回家' : '🎰 Try your luck — take this home'}}</text>
     <text class="draw-bar-arrow">›</text>
   </view>

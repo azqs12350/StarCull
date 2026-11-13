@@ -16,7 +16,7 @@
   <!-- 数据加载失败：可重试，不留白屏 -->
   <view class="load-error" wx:if="{{loadError}}">
     <text class="load-error-text">{{lang === 'zh' ? '抽奖数据加载失败，请检查网络' : 'Failed to load draw data. Check your network.'}}</text>
-    <button class="load-error-btn" size="mini" bindtap="retryLoad">{{lang === 'zh' ? '重试' : 'Retry'}}</button>
+    <button class="load-error-btn ui-tap" hover-class="ui-press-soft" size="mini" bindtap="retryLoad">{{lang === 'zh' ? '重试' : 'Retry'}}</button>
   </view>
 
   <!-- 抽奖动画区 -->
@@ -60,7 +60,8 @@
 
     <view class="draw-controls">
       <button
-        class="draw-btn {{(rolling || drawing || (!user && !needLogin)) ? 'disabled' : ''}}"
+        class="draw-btn ui-tap {{(rolling || drawing || (!user && !needLogin)) ? 'disabled' : ''}}"
+        hover-class="ui-press-soft"
         bindtap="onDraw"
         disabled="{{!needLogin && (!user || rolling || drawing)}}"
       >
@@ -115,13 +116,13 @@
           <input class="addr-input" placeholder="{{lang === 'zh' ? '地址第二行（可选）' : 'Address line 2 (optional)'}}" value="{{addr.address2}}" data-field="address2" bindinput="onAddrInput" />
         </view>
 
-        <button class="addr-paste-btn" bindtap="pasteAddress">{{lang === 'zh' ? '📋 从剪贴板粘贴地址' : '📋 Paste from clipboard'}}</button>
-        <button class="addr-save-btn" bindtap="saveAddress">{{lang === 'zh' ? '保存地址' : 'Save address'}}</button>
+        <button class="addr-paste-btn ui-tap" hover-class="ui-press-soft" bindtap="pasteAddress">{{lang === 'zh' ? '📋 从剪贴板粘贴地址' : '📋 Paste from clipboard'}}</button>
+        <button class="addr-save-btn ui-tap" hover-class="ui-press-soft" bindtap="saveAddress">{{lang === 'zh' ? '保存地址' : 'Save address'}}</button>
 
         <!-- 画框升级（仅 canvas 类型且未升级时显示） -->
         <view class="upgrade-row" wx:if="{{prizeResult && prizeResult.prizeType === 'canvas' && !prizeResult.framedUpgrade}}">
           <text class="upgrade-text">{{lang === 'zh' ? '想升级为带画框版本？' : 'Upgrade to framed version?'}}</text>
-          <button class="upgrade-btn" bindtap="onUpgrade" size="mini">{{lang === 'zh' ? '升级 (300 积分)' : 'Upgrade (300 pts)'}}</button>
+          <button class="upgrade-btn ui-tap" hover-class="ui-press-soft" bindtap="onUpgrade" size="mini">{{lang === 'zh' ? '升级 (300 积分)' : 'Upgrade (300 pts)'}}</button>
         </view>
       </view>
     </view>
@@ -149,7 +150,8 @@
       wx:for="{{draws}}"
       wx:for-item="item"
       wx:key="id"
-      class="record-card {{item.status === 'pending' || item.status === 'preparing' ? 'record-clickable' : ''}}"
+      class="record-card ui-tap {{item.status === 'pending' || item.status === 'preparing' ? 'record-clickable' : ''}}"
+      hover-class="{{item.status === 'pending' || item.status === 'preparing' ? 'ui-press-soft' : 'none'}}"
       wx:if="{{item.prizeType !== 'none'}}"
       data-id="{{item.id}}"
       bindtap="openAddrFromRecord"
@@ -219,17 +221,17 @@
     </view>
     <!-- 收藏 / 点赞 / 点踩：复用首页接口，互斥与积分由后端决定 -->
     <view class="prize-preview-actions">
-      <view class="pp-action {{previewProduct.starred ? 'pp-on' : ''}}" hover-class="pp-press" hover-stay-time="120" catchtap="onPrizeStar">
+      <view class="pp-action ui-interact {{previewProduct.starred ? 'pp-on ui-on' : ''}}" hover-class="ui-press" hover-stay-time="120" catchtap="onPrizeStar">
         <text class="pp-ico">{{previewProduct.starred ? '★' : '☆'}}</text>
         <text class="pp-txt">{{lang === 'zh' ? (previewProduct.starred ? '已收藏' : '收藏') : (previewProduct.starred ? 'Saved' : 'Save')}}</text>
         <text class="pp-cnt">{{previewProduct.count || 0}}</text>
       </view>
-      <view class="pp-action {{previewProduct.liked ? 'pp-on' : ''}}" hover-class="pp-press" hover-stay-time="120" catchtap="onPrizeLike">
+      <view class="pp-action ui-interact {{previewProduct.liked ? 'pp-on ui-on' : ''}}" hover-class="ui-press" hover-stay-time="120" catchtap="onPrizeLike">
         <text class="pp-ico">👍</text>
         <text class="pp-txt">{{lang === 'zh' ? '点赞' : 'Like'}}</text>
         <text class="pp-cnt">{{previewProduct.likeCount || 0}}</text>
       </view>
-      <view class="pp-action {{previewProduct.disliked ? 'pp-on' : ''}}" hover-class="pp-press" hover-stay-time="120" catchtap="onPrizeDislike">
+      <view class="pp-action ui-interact {{previewProduct.disliked ? 'pp-on ui-on' : ''}}" hover-class="ui-press" hover-stay-time="120" catchtap="onPrizeDislike">
         <text class="pp-ico">👎</text>
         <text class="pp-txt">{{lang === 'zh' ? '点踩' : 'Dislike'}}</text>
         <text class="pp-cnt">{{previewProduct.dislikeCount || 0}}</text>

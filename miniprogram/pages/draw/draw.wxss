@@ -534,19 +534,11 @@
   color: rgba(255, 255, 255, 0.8);
   font-size: 24rpx;
   white-space: nowrap;
-  transition: transform 0.12s ease, background 0.12s ease;
-}
-
-/* 按下反馈：缩小 + 提亮 */
-.pp-action.pp-press {
-  transform: scale(0.92);
-  background: rgba(255, 255, 255, 0.24);
 }
 
 .pp-action.pp-on {
   background: rgba(201, 162, 39, 0.9);
   color: #ffffff;
-  animation: pp-pop 0.36s ease-out;
 }
 
 /* 图标、文案、计数统一行高，纵向居中对齐 */
@@ -571,14 +563,6 @@
   display: inline-block;
   vertical-align: middle;
   font-variant-numeric: tabular-nums;
-}
-
-/* 选中激活动效：轻微放大回弹 */
-@keyframes pp-pop {
-  0% { transform: scale(1); }
-  35% { transform: scale(1.16); }
-  65% { transform: scale(0.96); }
-  100% { transform: scale(1); }
 }
 
 /* 提示单独一行，位于按钮下方，不再和按钮重叠 */
