@@ -1,7 +1,7 @@
 /* StarCull · 后台：产品、账号、设置与记录 */
 
 /* ---------- 常量：快递平台 ---------- */
-// 与后端 draws.js 的 COURIER_PLATFORMS 保持同步
+// 后端只存快递 code，展示名由前端维护
 const STUDIO_COURIER_PLATFORMS = [
   { code: 'SF',    zh: '顺丰速运',      en: 'SF Express',      es: 'SF Express' },
   { code: 'YTO',   zh: '圆通速递',      en: 'YTO Express',     es: 'YTO Express' },
