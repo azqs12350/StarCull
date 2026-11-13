@@ -1,0 +1,14 @@
+{
+  "name": "starcull-local-sync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "从 StarCull 服务器拉取 db.json 与 uploads 图片到本地 data/（原子覆盖 + 自动备份 + 增量）",
+  "main": "sync.js",
+  "scripts": {
+    "sync": "node sync.js",
+    "sync:dry": "node sync.js --dry-run"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

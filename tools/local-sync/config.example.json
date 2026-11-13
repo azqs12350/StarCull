@@ -1,0 +1,11 @@
+{
+  "_说明": "复制本文件为 config.local.json 后填写。config.local.json 已被 .gitignore 忽略，不会入库。",
+  "serverUrl": "http://45.64.75.15:4173",
+  "adminToken": "<服务器 admin token>",
+  "dataDir": "../../data",
+  "backupDir": "../../.backups/local-sync",
+  "keepDbBackups": 5,
+  "backupImages": false,
+  "concurrency": 4,
+  "timeoutMs": 30000
+}

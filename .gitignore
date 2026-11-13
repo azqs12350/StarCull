@@ -20,6 +20,12 @@ data/
 # 微信开发者工具个人配置
 miniprogram/project.private.config.json
 
+# 本地同步工具的本地配置（含 admin token）与备份/同步清单
+tools/local-sync/config.local.json
+tools/local-sync/tmp-mirror/
+tools/local-sync/*.part-*
+.backups/
+
 # 系统文件
 .DS_Store
 Thumbs.db
