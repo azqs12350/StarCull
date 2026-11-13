@@ -18,6 +18,8 @@ const ROLL_FRAMES = 30;
 const ROLL_MIN_DELAY = 40;
 const ROLL_MAX_DELAY = 800;
 const LOCK_FADE_MS = 500;
+// 未中奖也作为滚动序列里的一格（用卡片渲染，不是图片）
+const LOSE_FRAME = '__lose__';
 
 Page({
   data: {
@@ -526,8 +528,10 @@ Page({
       // 抽奖请求与滚动并行：点击后立即请求，滚动固定跑满约 9.2 秒
       this._rollCanStop = false;
       this._pendingPrizeImage = '';
+      this._pendingPrizeType = '';
       const drawPromise = api.draw();
       const imageReady = drawPromise.then((r) => {
+        this._pendingPrizeType = (r && r.draw && r.draw.prizeType) || '';
         if (r && r.draw && r.draw.product && r.draw.product.image) {
           return this._prepareResultImage(r.draw.id, r.draw.product.id, r.draw.product.image).then((url) => {
             if (url) this._pendingPrizeImage = url;
@@ -558,7 +562,7 @@ Page({
 
   // ---------- 滚动图片：直接复用首页共享缓存 ----------
 
-  // 缓存里有多少用多少，不额外补拉、不按数量截断
+  // 缓存里有多少用多少，不额外补拉、不按数量截断；末尾附加「未中奖」格
   _rollFramesFromCache() {
     const urls = imageCache.values();
     const frames = [];
@@ -568,6 +572,7 @@ Page({
       seen.add(urls[i]);
       frames.push({ image: urls[i] });
     }
+    if (frames.length) frames.push({ image: LOSE_FRAME });
     return frames;
   },
 
@@ -585,8 +590,10 @@ Page({
 
       const tick = () => {
         if (frame >= ROLL_FRAMES && this._rollCanStop !== false) {
-          // 定格：最后一帧平滑过渡到中奖图（淡入 + 轻微缩放），再结束滚动
-          const winnerImage = this._pendingPrizeImage || frames[frame % frames.length].image;
+          // 定格：中奖锁定中奖图，未中奖锁定「未中奖」格，再淡入定格
+          const winnerImage = this._pendingPrizeType === 'none'
+            ? LOSE_FRAME
+            : (this._pendingPrizeImage || frames[frame % frames.length].image);
           this.setData({ rollImage: winnerImage, lockFrame: true });
           setTimeout(() => {
             this.setData({ rolling: false, lockFrame: false });

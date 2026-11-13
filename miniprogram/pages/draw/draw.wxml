@@ -22,7 +22,15 @@
   <!-- 抽奖动画区 -->
   <view class="draw-hero">
     <view class="draw-frame" bindtap="openAddrFromResult">
-      <block wx:if="{{rolling && rollImage}}">
+      <!-- 未中奖格：作为转盘中的一格参与滚动，也可作为最终定格 -->
+      <block wx:if="{{rolling && rollImage === '__lose__'}}">
+        <view class="draw-img lose-frame {{lockFrame ? 'lock-in' : ''}}">
+          <text class="lose-emoji">🎲</text>
+          <text class="lose-title">{{lang === 'zh' ? '未中奖' : 'No prize'}}</text>
+          <text class="lose-sub">{{lang === 'zh' ? '下一把说不定就是它' : 'Better luck next time'}}</text>
+        </view>
+      </block>
+      <block wx:elif="{{rolling && rollImage}}">
         <image
           class="draw-img {{lockFrame ? 'lock-in' : ''}}"
           src="{{rollImage}}"
