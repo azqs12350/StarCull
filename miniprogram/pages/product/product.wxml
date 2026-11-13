@@ -13,9 +13,9 @@
   <view class="info">
     <view class="title-zh">{{lang === 'en' ? (product.titleEn || product.titleZh) : (product.titleZh || product.titleEn)}}</view>
 
-    <!-- 系列标签 -->
+    <!-- 系列标签：紧跟标题，独立一行 -->
     <view class="series-row" wx:if="{{product.seriesZh || product.seriesEn}}">
-      <text class="tag">{{lang === 'en' ? (product.seriesEn || product.seriesZh) : (product.seriesZh || product.seriesEn)}}</text>
+      <text class="tag series-tag">{{lang === 'en' ? (product.seriesEn || product.seriesZh) : (product.seriesZh || product.seriesEn)}}</text>
     </view>
 
     <view class="divider" />

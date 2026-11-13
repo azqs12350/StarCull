@@ -30,7 +30,22 @@
 }
 
 .series-row {
-  margin-top: 16rpx;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 14rpx;
+  min-height: 44rpx;
+}
+
+/* 详情页本地样式，避免依赖全局 .tag 导致不可见 */
+.series-tag {
+  display: inline-block;
+  padding: 6rpx 18rpx;
+  border-radius: 20rpx;
+  background: #ebe9e2;
+  color: #555555;
+  font-size: 24rpx;
+  line-height: 1.4;
 }
 
 .divider {
