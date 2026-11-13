@@ -7,6 +7,12 @@
     <text class="points-num">{{user ? points : '--'}}</text>
   </view>
 
+  <!-- 后台刷新提示：已有内容时才出现，不遮挡内容，请求结束自动消失 -->
+  <view class="refresh-hint" wx:if="{{refreshing}}">
+    <view class="refresh-dot"></view>
+    <text class="refresh-text">{{lang === 'zh' ? '数据更新中…' : 'Updating…'}}</text>
+  </view>
+
   <!-- 数据加载失败：可重试，不留白屏 -->
   <view class="load-error" wx:if="{{loadError}}">
     <text class="load-error-text">{{lang === 'zh' ? '抽奖数据加载失败，请检查网络' : 'Failed to load draw data. Check your network.'}}</text>

@@ -9,6 +9,9 @@ const DRAW_CACHE_KEY = 'sc_draw_cache_v1';
 const DRAW_CACHE_TTL = 30 * 60 * 1000;
 const DRAW_CACHE_LIMIT = 30;
 
+// 后台刷新提示的延迟：请求在此时间内完成就不显示，避免提示一闪而过
+const REFRESH_HINT_DELAY = 250;
+
 Page({
   data: {
     user: null,
@@ -17,6 +20,7 @@ Page({
     points: 0,
     rolling: false,
     drawing: false,
+    refreshing: false,
     loading: true,
     loadError: false,
     needLogin: false,
@@ -64,7 +68,7 @@ Page({
     wx.setNavigationBarTitle({ title: lang === 'en' ? 'Draw' : '抽奖' });
 
     if (!auth.isLoggedIn()) {
-      this.setData({ needLogin: true, loading: false, loadError: false });
+      this.setData({ needLogin: true, loading: false, loadError: false, refreshing: false });
       wx.showModal({
         title: '需要登录',
         content: '请先登录或注册后参与抽奖',
@@ -84,6 +88,7 @@ Page({
     const patch = {
       needLogin: false,
       loadError: false,
+      refreshing: false,
       user: cachedUser || null,
       points: cached && cached.points != null ? cached.points : (cachedUser ? cachedUser.points || 0 : 0),
       draws: cached ? cached.draws || [] : [],
@@ -105,6 +110,7 @@ Page({
       return;
     }
     this._loadingData = true;
+    this._scheduleRefreshHint();
 
     try {
       // 两个请求并行，缩短数据到达时间
@@ -159,10 +165,30 @@ Page({
       }
     } finally {
       this._loadingData = false;
+      this._clearRefreshHint();
+      if (this.data.refreshing) this.setData({ refreshing: false });
       if (this._reloadQueued) {
         this._reloadQueued = false;
         this.loadData();
       }
+    }
+  },
+
+  // 请求超过 REFRESH_HINT_DELAY 才显示「数据更新中」，避免快速请求导致提示闪烁。
+  // 首屏无缓存时已有骨架屏，不叠加刷新提示。
+  _scheduleRefreshHint() {
+    this._clearRefreshHint();
+    if (this.data.loading) return;
+    this._refreshTimer = setTimeout(() => {
+      this._refreshTimer = null;
+      if (this._loadingData) this.setData({ refreshing: true });
+    }, REFRESH_HINT_DELAY);
+  },
+
+  _clearRefreshHint() {
+    if (this._refreshTimer) {
+      clearTimeout(this._refreshTimer);
+      this._refreshTimer = null;
     }
   },
 
