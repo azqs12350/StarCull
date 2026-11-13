@@ -1,15 +1,15 @@
 const api = require('../../utils/api.js');
 const i18n = require('../../utils/i18n.js');
 const auth = require('../../utils/auth.js');
+const imageCache = require('../../utils/image-cache.js');
 
 // 首屏占位图：2x2 浅灰 PNG（页面 .grid-img 本身也有同色背景）
 // 待转换的图先用它铺位，转换成功后按 index 替换，避免空屏或裂图
 const PLACEHOLDER_IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEUlEQVR42mP48OHNfxBmgDEAiEwPLVCOe4IAAAAASUVORK5CYII=';
 
 const PAGE_SIZE = 10;              // 首屏 / 每次触底加载 10 条
-const IMG_CACHE_MAX = 60;          // 图片缓存最多 60 张，防止无限膨胀
-const IMG_CACHE_TTL = 30 * 60 * 1000; // 30 分钟过期
 const CACHE_APPLY_CHUNK = 3;       // 缓存图分 3 张一组 setData，避免单次超过 1MB
+const PREFETCH_DELAY = 800;        // 首屏图片处理完后再开始后台预加载下一批
 
 Page({
   data: {
@@ -28,14 +28,25 @@ Page({
     this.setData({ lang: lang });
     wx.setNavigationBarTitle({ title: 'StarCull' });
 
-    if (!this._imgCache) this._imgCache = new Map();
     if (!this._patchChain) this._patchChain = Promise.resolve();
+
+    this._prefetchAllowed = true;
 
     // 数据引用没变化就保留当前分页、滚动位置和已加载图片，不重复请求
     if (this._rawRef && app.globalData.products === this._rawRef && this.data.products.length) {
+      this._schedulePrefetch(this._viewToken);
       return;
     }
     this.loadProducts();
+  },
+
+  onHide() {
+    // 离开首页就暂停后台预加载，避免和抽奖/留言等更重要请求抢云函数
+    this._prefetchAllowed = false;
+    if (this._prefetchTimer) {
+      clearTimeout(this._prefetchTimer);
+      this._prefetchTimer = null;
+    }
   },
 
   onPullDownRefresh() {
@@ -112,6 +123,7 @@ Page({
       console.log('[Gallery] FIRST FRAME category=' + active + ' products=' + items.length + '/' + categoryList.length);
 
       this._startImages(items, 0, token);
+      this._schedulePrefetch(token);
     } catch (e) {
       console.warn('[Gallery] loadProducts failed:', e.message);
       wx.showToast({ title: '加载失败', icon: 'none' });
@@ -157,6 +169,7 @@ Page({
     this.setData(patch);
 
     this._startImages(items, start, token);
+    this._schedulePrefetch(token);
     this._loadMoreLock = false;
 
     // 给“加载中”一个可见窗口，同时避免连续触底时状态来回跳
@@ -188,7 +201,7 @@ Page({
 
     items.forEach((item, i) => {
       if (!item._src) return;
-      const cachedUrl = this._cacheGet(item.id);
+      const cachedUrl = imageCache.get(item.id);
       if (cachedUrl) {
         cached.push({ index: startIndex + i, url: cachedUrl });
         return;
@@ -231,7 +244,7 @@ Page({
           const entries = srcMap[src] || [];
           for (let i = 0; i < entries.length; i++) {
             patch['products[' + entries[i].index + '].image'] = dataUrl;
-            this._cacheSet(entries[i].id, dataUrl);
+            imageCache.set(entries[i].id, dataUrl);
             changed = true;
           }
           console.log('[Gallery] image ready: index=' + entries.map((e) => e.index).join(',') + ' src=' + src.substring(0, 50));
@@ -243,29 +256,44 @@ Page({
     });
   },
 
-  _cacheGet(id) {
-    if (!id || !this._imgCache) return null;
-    const entry = this._imgCache.get(id);
-    if (!entry) return null;
-    if (Date.now() - entry.ts > IMG_CACHE_TTL) {
-      this._imgCache.delete(id);
-      return null;
-    }
-    // LRU：命中后移到队尾
-    this._imgCache.delete(id);
-    this._imgCache.set(id, entry);
-    return entry.url;
+  // 首屏图片处理完后再低优先级预加载下一批（不追加列表，只暖缓存）
+  _schedulePrefetch(token) {
+    if (!this._canProxyImages) return;
+    if (this._prefetchTimer) clearTimeout(this._prefetchTimer);
+    this._prefetchTimer = setTimeout(() => {
+      this._prefetchTimer = null;
+      this._prefetchNext(token);
+    }, PREFETCH_DELAY);
   },
 
-  _cacheSet(id, url) {
-    if (!id || !url) return;
-    if (!this._imgCache) this._imgCache = new Map();
-    if (this._imgCache.has(id)) this._imgCache.delete(id);
-    this._imgCache.set(id, { url: url, ts: Date.now() });
-    while (this._imgCache.size > IMG_CACHE_MAX) {
-      const oldest = this._imgCache.keys().next().value;
-      this._imgCache.delete(oldest);
-    }
+  _prefetchNext(token) {
+    if (!this._canProxyImages || !this._prefetchAllowed) return;
+    if (token !== this._viewToken) return;
+
+    const list = this._categoryProducts || [];
+    if (this._loadedCount >= list.length) return;
+
+    const nextRaw = list.slice(this._loadedCount, this._loadedCount + PAGE_SIZE);
+    const srcMap = {};
+    const urls = [];
+    nextRaw.forEach((p) => {
+      if (!p || !api.needsPatch(p.image)) return;
+      if (imageCache.get(p.id)) return;
+      if (srcMap[p.image]) {
+        srcMap[p.image].push(p.id);
+        return;
+      }
+      srcMap[p.image] = [p.id];
+      urls.push(p.image);
+    });
+    if (!urls.length) return;
+
+    api.prefetchImageUrls(urls, (map) => {
+      Object.keys(map).forEach((src) => {
+        const ids = srcMap[src] || [];
+        for (let i = 0; i < ids.length; i++) imageCache.set(ids[i], map[src]);
+      });
+    }, () => !this._prefetchAllowed || token !== this._viewToken);
   },
 
   buildCategories(products) {

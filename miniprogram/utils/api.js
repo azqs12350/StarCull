@@ -12,6 +12,10 @@ console.log('[api.js] LOADED v2026-11-13-incremental');
 
 const BASE_URL = 'http://45.64.75.15:4173';
 
+// 在途计数：低优先级图片预加载据此让路，避免抢占用户信息/抽奖/留言等请求
+let activeRequests = 0;
+let activeImageCalls = 0;
+
 // ---------- 图片 URL 补全 ----------
 function fullImgUrl(relPath) {
   if (!relPath) return '';
@@ -56,13 +60,16 @@ function request(method, path, data, retries) {
   const transport = useCloud ? 'CLOUD' : 'DIRECT';
   console.log('[api] → ' + transport + ' ' + method + ' ' + path);
   const fn = useCloud ? callViaCloud : callDirect;
+  activeRequests++;
+  let released = false;
+  const release = () => { if (!released) { released = true; activeRequests--; } };
   return fn(method, path, data).catch((err) => {
     console.warn('[api] ' + transport + ' FAILED:', err.message);
     if (retries > 1) {
       return new Promise(r => setTimeout(r, 500)).then(() => request(method, path, data, retries - 1));
     }
     throw err;
-  });
+  }).then((v) => { release(); return v; }, (e) => { release(); throw e; });
 }
 
 function callViaCloud(method, path, data) {
@@ -255,6 +262,7 @@ function patchImageUrls(urls, onBatch, shouldStop) {
   let okCount = 0;
 
   async function convertBatch(batch) {
+    activeImageCalls++;
     try {
       const res = await callCloudBatchImages(batch);
       const images = (res && res.images) || {};
@@ -276,6 +284,8 @@ function patchImageUrls(urls, onBatch, shouldStop) {
           console.warn('[api] image failed, keep placeholder: ' + url + ' (' + e2.message + ')');
         }
       }
+    } finally {
+      activeImageCalls--;
     }
   }
 
@@ -293,6 +303,62 @@ function patchImageUrls(urls, onBatch, shouldStop) {
   for (let i = 0; i < PATCH_CONCURRENCY; i++) workers.push(worker());
   return Promise.all(workers).then(() => {
     console.log('[api] patchImageUrls done: ' + okCount + '/' + list.length);
+    return { total: list.length, ok: okCount };
+  });
+}
+
+// 低优先级图片预加载：单并发、每批之间留间隔，有普通请求在途时先让路。
+// 只用于首页后台暖缓存，不参与首屏渲染；shouldStop 可随时中止。
+const PREFETCH_GAP_MS = 250;
+
+function prefetchImageUrls(urls, onBatch, shouldStop) {
+  const list = (urls || []).filter(Boolean);
+  if (!list.length) return Promise.resolve({ total: 0, ok: 0 });
+  if (!checkCloud()) return Promise.resolve({ total: list.length, ok: 0, skipped: true });
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  let next = 0;
+  let okCount = 0;
+
+  async function waitIdle() {
+    while (activeRequests > 0 || activeImageCalls > 0) {
+      if (shouldStop && shouldStop()) return false;
+      await sleep(200);
+    }
+    return true;
+  }
+
+  async function worker() {
+    while (true) {
+      if (shouldStop && shouldStop()) return;
+      if (!(await waitIdle())) return;
+      if (shouldStop && shouldStop()) return;
+
+      const start = next;
+      next += PATCH_BATCH_SIZE;
+      if (start >= list.length) return;
+      const batch = list.slice(start, start + PATCH_BATCH_SIZE);
+
+      try {
+        activeImageCalls++;
+        const res = await callCloudBatchImages(batch);
+        const images = (res && res.images) || {};
+        const keys = Object.keys(images);
+        if (keys.length) {
+          okCount += keys.length;
+          if (onBatch) onBatch(images, batch);
+        }
+      } catch (e) {
+        console.warn('[api] prefetch batch failed (' + batch.length + '): ' + e.message);
+      } finally {
+        activeImageCalls--;
+      }
+      await sleep(PREFETCH_GAP_MS);
+    }
+  }
+
+  return worker().then(() => {
+    console.log('[api] prefetchImageUrls done: ' + okCount + '/' + list.length);
     return { total: list.length, ok: okCount };
   });
 }
@@ -344,6 +410,7 @@ module.exports = {
   patchProducts,
   patchDraw,
   patchImageUrls,
+  prefetchImageUrls,
   patchProductsImgInPlace,
   patchDrawImgInPlace,
   login, register, logout,

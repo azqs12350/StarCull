@@ -196,4 +196,16 @@
     <text wx:else>No draws yet</text>
   </view>
 
+  <!-- 中奖图放大预览：原地浮层，关闭后仍停留在结果界面 -->
+  <view class="prize-preview" wx:if="{{previewVisible}}" bindtap="closePrizePreview">
+    <image
+      class="prize-preview-img"
+      src="{{previewImage}}"
+      mode="aspectFit"
+      catchtap="noop"
+    />
+    <view class="prize-preview-close" catchtap="closePrizePreview">✕</view>
+    <view class="prize-preview-tip">{{lang === 'zh' ? '点击空白处关闭' : 'Tap outside to close'}}</view>
+  </view>
+
 </view>
