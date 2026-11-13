@@ -275,6 +275,7 @@ Page({
     const map = {
       pending: '待填写地址',
       preparing: '准备中 · 等待发货',
+      making: '制作中',
       shipped: '已发货',
       done: '已完结'
     };

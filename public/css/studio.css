@@ -119,6 +119,7 @@
 }
 .status-badge.is-no-address { background: #f1f1f1; color: #888; }
 .status-badge.is-preparing  { background: #fff7e0; color: #7a5700; }
+.status-badge.is-making     { background: #f0e6ff; color: #6a1b9a; }
 .status-badge.is-shipped    { background: #dbe8ff; color: #1f3f87; }
 .status-badge.is-done       { background: #dff0df; color: #2f6b2f; }
 

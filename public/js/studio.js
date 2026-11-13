@@ -30,6 +30,7 @@ function drawStatusLabel(status) {
   if (status === 'confirmed') status = 'preparing';
   switch (status) {
     case 'preparing': return t('studio.statusPreparing');
+    case 'making':    return t('studio.statusMaking');
     case 'shipped':   return t('studio.statusShipped');
     case 'done':      return t('studio.statusDone');
     default:          return t('studio.statusNoAddress');
@@ -40,6 +41,7 @@ function drawStatusClass(status) {
   if (status === 'confirmed') status = 'preparing';
   switch (status) {
     case 'preparing': return 'is-preparing';
+    case 'making':    return 'is-making';
     case 'shipped':   return 'is-shipped';
     case 'done':      return 'is-done';
     default:          return 'is-no-address';
@@ -60,7 +62,7 @@ function renderStudioDrawRow(draw) {
 
   // 管理操作按钮
   let adminActions = '';
-  if (draw.status === 'preparing' && draw.shipping) {
+  if (draw.shipping && (draw.status === 'preparing' || draw.status === 'making')) {
     adminActions = `<button class="icon-btn admin-ship" data-ship="${draw.id}">${t('studio.btnShip')}</button>`;
   } else if (draw.status === 'shipped') {
     adminActions = `<button class="icon-btn admin-complete" data-complete="${draw.id}">${t('studio.btnComplete')}</button>

@@ -110,6 +110,7 @@ const I18N = {
       /* 状态徽章（工作室 / 中奖记录通用） */
       statusNoAddress: '无地址',
       statusPreparing: '准备中',
+      statusMaking: '制作中',
       statusShipped: '已发货',
       statusDone: '已完结',
       noAddressYet: '用户未填地址',
@@ -395,6 +396,7 @@ const I18N = {
       /* status badges */
       statusNoAddress: 'No address',
       statusPreparing: 'Preparing',
+      statusMaking: 'Making',
       statusShipped: 'Shipped',
       statusDone: 'Done',
       noAddressYet: 'No address yet',
