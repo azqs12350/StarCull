@@ -12,6 +12,12 @@ const DRAW_CACHE_LIMIT = 30;
 // 后台刷新提示的延迟：请求在此时间内完成就不显示，避免提示一闪而过
 const REFRESH_HINT_DELAY = 250;
 
+// 滚动动画：只为前 N 张作品预取 base64；至少 2 张就绪才开滚；最多等 2.5 秒
+const ROLL_PREFETCH_MAX = 12;
+const ROLL_READY_MIN = 2;
+const ROLL_WAIT_MS = 2500;
+const ROLL_CACHE_MAX = 24;
+
 Page({
   data: {
     user: null,
@@ -24,8 +30,7 @@ Page({
     loading: true,
     loadError: false,
     needLogin: false,
-    rollFrame: 0,
-    rollFrames: [],
+    rollImage: '',
     showAddress: false,
     editingAddress: false,
     prizeResult: null,  // 最近一次抽奖结果
@@ -101,7 +106,10 @@ Page({
     }
     this.setData(patch);
 
-    this.loadData();
+    // 先用已有产品列表预热滚动图（base64），等用户点抽奖时直接用
+    this._prepareRollCache(app.globalData.products);
+
+    this._loadPromise = this.loadData();
   },
 
   async loadData(force) {
@@ -152,6 +160,9 @@ Page({
       });
 
       this._writeDrawCache(session.user, drawsList, points, noneCount, comfort, lang);
+
+      // 数据到了就开始把滚动用的图转成 base64（每批返回即入缓存）
+      this._prepareRollCache(session.products);
     } catch (e) {
       console.warn('[draw] loadData failed:', e.message);
       if (this.data.draws && this.data.draws.length) {
@@ -194,7 +205,7 @@ Page({
 
   retryLoad() {
     this.setData({ loading: true, loadError: false });
-    this.loadData();
+    this._loadPromise = this.loadData();
   },
 
   _userKey(user) {
@@ -291,13 +302,119 @@ Page({
     }
   },
 
-  // 抽奖动画：快速轮播产品图
-  startRolling() {
-    return new Promise((resolve) => {
-      const products = this.data.products;
-      if (!products.length) { resolve(); return; }
+  // ---------- 滚动图片准备 ----------
 
-      this.setData({ rolling: true, rollFrame: 0, rollFrames: products });
+  // 预取滚动用图：只在云函数通道下有意义（真机不能直接加载 HTTP 图）
+  _prepareRollCache(products) {
+    if (!products || !products.length) return;
+    if (this._prefetchPromise) return;
+
+    const urls = [];
+    const seen = new Set();
+    for (let i = 0; i < products.length && i < ROLL_PREFETCH_MAX; i++) {
+      const p = products[i];
+      const src = p && p.image;
+      if (!src) continue;
+      if (src.startsWith('data:')) {
+        this._rollCacheSet(src, src);
+        continue;
+      }
+      if (!api.needsPatch(src) || seen.has(src) || this._rollGet(src)) continue;
+      seen.add(src);
+      urls.push(src);
+    }
+    if (!urls.length) return;
+
+    this._prefetchPromise = api.patchImageUrls(urls, (map) => {
+      Object.keys(map).forEach((src) => this._rollCacheSet(src, map[src]));
+    }).catch((e) => {
+      console.warn('[draw] roll prefetch failed:', e.message);
+    }).then(() => {
+      this._prefetchPromise = null;
+    });
+  },
+
+  _rollCacheSet(src, dataUrl) {
+    if (!src || !dataUrl) return;
+    if (!this._rollCache) this._rollCache = new Map();
+    if (this._rollCache.has(src)) this._rollCache.delete(src);
+    this._rollCache.set(src, dataUrl);
+    while (this._rollCache.size > ROLL_CACHE_MAX) {
+      this._rollCache.delete(this._rollCache.keys().next().value);
+    }
+  },
+
+  _rollGet(src) {
+    if (!src || !this._rollCache) return '';
+    return this._rollCache.get(src) || '';
+  },
+
+  // 只用真正能显示的图（base64）组帧，未就绪的直接跳过
+  _buildRollFrames(products) {
+    const frames = [];
+    const seen = new Set();
+    for (let i = 0; i < products.length; i++) {
+      const p = products[i];
+      const src = p && p.image;
+      if (!src) continue;
+      const ready = src.startsWith('data:') ? src : this._rollGet(src);
+      if (!ready || seen.has(ready)) continue;
+      seen.add(ready);
+      frames.push({ image: ready });
+    }
+    return frames;
+  },
+
+  async _waitForProducts(timeoutMs) {
+    if ((this.data.products || []).length) return;
+    if (this._loadPromise) {
+      await Promise.race([
+        this._loadPromise.catch(() => {}),
+        new Promise((r) => setTimeout(r, timeoutMs))
+      ]);
+    }
+    if ((this.data.products || []).length) return;
+    // 兜底：登录时缓存在全局的原始产品列表（图片可能还需转换）
+    const app = getApp();
+    const globals = (app && app.globalData && app.globalData.products) || [];
+    if (globals.length) this.setData({ products: globals });
+  },
+
+  async _waitForRollFrames(products, timeoutMs) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      if (this._buildRollFrames(products).length >= ROLL_READY_MIN) return;
+      if (!this._prefetchPromise) return; // 预取已结束且仍不够
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  },
+
+  // 抽奖动画：等图片就绪后快速轮播，结束锁定结果
+  async startRolling() {
+    let products = this.data.products || [];
+    if (!products.length) {
+      await this._waitForProducts(1200);
+      products = this.data.products || [];
+    }
+    if (!products.length) return;
+
+    let frames = this._buildRollFrames(products);
+    if (frames.length < ROLL_READY_MIN) {
+      await this._waitForRollFrames(products, ROLL_WAIT_MS);
+      frames = this._buildRollFrames(products);
+    }
+
+    // 兜底：开发者工具直连模式下 HTTP 图本身可显示，允许直接用原图
+    if (frames.length < ROLL_READY_MIN && api.getTransport() !== 'cloud') {
+      frames = products
+        .filter((p) => p && p.image && !frames.some((f) => f.image === p.image))
+        .map((p) => ({ image: p.image }));
+    }
+
+    if (!frames.length) return;
+
+    return new Promise((resolve) => {
+      this.setData({ rolling: true, rollImage: frames[0].image });
       let frame = 0;
       const totalFrames = 18;
       const tick = () => {
@@ -308,7 +425,8 @@ Page({
           return;
         }
         const speed = 40 + frame * 18; // 逐渐变慢
-        this.setData({ rollFrame: frame % products.length });
+        const idx = frame % frames.length;
+        this.setData({ rollImage: frames[idx].image });
         setTimeout(tick, speed);
       };
       tick();
@@ -325,7 +443,24 @@ Page({
     if (free && drawResult && this.data.user) {
       patch['user.freeDrawClaimed'] = true;
     }
+
+    // 结果图：优先用已预取的 base64；没有就先用最后一帧顶上，转换完再替换，避免灰块
+    var result = null;
+    if (drawResult && drawResult.prizeType !== 'none' && drawResult.product) {
+      var rawImage = drawResult.product.image || '';
+      var ready = rawImage.indexOf('data:') === 0 ? rawImage : this._rollGet(rawImage);
+      result = Object.assign({}, drawResult, {
+        product: Object.assign({}, drawResult.product, {
+          image: ready || this.data.rollImage || rawImage
+        })
+      });
+      patch.prizeResult = result;
+    } else if (drawResult && drawResult.prizeType === 'none') {
+      patch.prizeResult = null;
+    }
+
     this.setData(patch);
+    if (result) this._prepareResultImage(result.id, drawResult.product.image);
     this.loadData(true);
 
     if (!drawResult) return;
@@ -346,6 +481,29 @@ Page({
     } else {
       wx.showToast({ title: '🎉 中奖啦！去填地址吧～', icon: 'success', duration: 2200 });
     }
+  },
+
+  // 结果图补齐：把中奖作品的图转成 base64 后替换当前展示
+  _prepareResultImage(resultId, rawImage) {
+    if (!resultId || !rawImage || rawImage.indexOf('data:') === 0) return;
+    if (!api.needsPatch(rawImage)) return;
+
+    var cached = this._rollGet(rawImage);
+    if (cached) {
+      this._applyResultImage(resultId, cached);
+      return;
+    }
+    api.patchImageUrls([rawImage], (map) => {
+      var url = map[rawImage];
+      if (!url) return;
+      this._rollCacheSet(rawImage, url);
+      this._applyResultImage(resultId, url);
+    }).catch((e) => console.warn('[draw] result image failed:', e.message));
+  },
+
+  _applyResultImage(resultId, url) {
+    if (!this.data.prizeResult || this.data.prizeResult.id !== resultId) return;
+    this.setData({ 'prizeResult.product.image': url });
   },
 
   // ---------- 地址表单 ----------

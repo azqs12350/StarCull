@@ -22,10 +22,10 @@
   <!-- 抽奖动画区 -->
   <view class="draw-hero">
     <view class="draw-frame">
-      <block wx:if="{{rolling && rollFrames.length}}">
+      <block wx:if="{{rolling && rollImage}}">
         <image
           class="draw-img"
-          src="{{rollFrames[rollFrame].image}}"
+          src="{{rollImage}}"
           mode="aspectFill"
         />
       </block>
