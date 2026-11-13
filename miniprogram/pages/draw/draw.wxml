@@ -219,17 +219,17 @@
     </view>
     <!-- 收藏 / 点赞 / 点踩：复用首页接口，互斥与积分由后端决定 -->
     <view class="prize-preview-actions">
-      <view class="pp-action {{previewProduct.starred ? 'pp-on' : ''}}" catchtap="onPrizeStar">
+      <view class="pp-action {{previewProduct.starred ? 'pp-on' : ''}}" hover-class="pp-press" hover-stay-time="120" catchtap="onPrizeStar">
         <text class="pp-ico">{{previewProduct.starred ? '★' : '☆'}}</text>
         <text class="pp-txt">{{lang === 'zh' ? (previewProduct.starred ? '已收藏' : '收藏') : (previewProduct.starred ? 'Saved' : 'Save')}}</text>
         <text class="pp-cnt">{{previewProduct.count || 0}}</text>
       </view>
-      <view class="pp-action {{previewProduct.liked ? 'pp-on' : ''}}" catchtap="onPrizeLike">
+      <view class="pp-action {{previewProduct.liked ? 'pp-on' : ''}}" hover-class="pp-press" hover-stay-time="120" catchtap="onPrizeLike">
         <text class="pp-ico">👍</text>
         <text class="pp-txt">{{lang === 'zh' ? '点赞' : 'Like'}}</text>
         <text class="pp-cnt">{{previewProduct.likeCount || 0}}</text>
       </view>
-      <view class="pp-action {{previewProduct.disliked ? 'pp-on' : ''}}" catchtap="onPrizeDislike">
+      <view class="pp-action {{previewProduct.disliked ? 'pp-on' : ''}}" hover-class="pp-press" hover-stay-time="120" catchtap="onPrizeDislike">
         <text class="pp-ico">👎</text>
         <text class="pp-txt">{{lang === 'zh' ? '点踩' : 'Dislike'}}</text>
         <text class="pp-cnt">{{previewProduct.dislikeCount || 0}}</text>
