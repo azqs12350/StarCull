@@ -1,10 +1,16 @@
 <!--pages/draw/draw.wxml-->
-<view class="page" wx:if="{{user}}">
+<view class="page">
 
   <!-- 积分显示 -->
   <view class="points-bar">
     <text class="points-label">{{lang === 'zh' ? '我的积分' : 'My Points'}}</text>
-    <text class="points-num">{{points}}</text>
+    <text class="points-num">{{user ? points : '--'}}</text>
+  </view>
+
+  <!-- 数据加载失败：可重试，不留白屏 -->
+  <view class="load-error" wx:if="{{loadError}}">
+    <text class="load-error-text">{{lang === 'zh' ? '抽奖数据加载失败，请检查网络' : 'Failed to load draw data. Check your network.'}}</text>
+    <button class="load-error-btn" size="mini" bindtap="retryLoad">{{lang === 'zh' ? '重试' : 'Retry'}}</button>
   </view>
 
   <!-- 抽奖动画区 -->
@@ -39,11 +45,14 @@
 
     <view class="draw-controls">
       <button
-        class="draw-btn {{rolling ? 'disabled' : ''}}"
+        class="draw-btn {{(rolling || drawing || (!user && !needLogin)) ? 'disabled' : ''}}"
         bindtap="onDraw"
-        disabled="{{rolling}}"
+        disabled="{{!needLogin && (!user || rolling || drawing)}}"
       >
-        <text wx:if="{{rolling}}">{{lang === 'zh' ? '抽奖中...' : 'Drawing...'}}</text>
+        <text wx:if="{{needLogin}}">{{lang === 'zh' ? '请先登录' : 'Please sign in'}}</text>
+        <text wx:elif="{{!user && loadError}}">{{lang === 'zh' ? '加载失败' : 'Load failed'}}</text>
+        <text wx:elif="{{!user}}">{{lang === 'zh' ? '加载中...' : 'Loading...'}}</text>
+        <text wx:elif="{{rolling || drawing}}">{{lang === 'zh' ? '抽奖中...' : 'Drawing...'}}</text>
         <text wx:elif="{{user.freeDrawClaimed && points < 50}}">{{lang === 'zh' ? '积分不足' : 'Not enough points'}}</text>
         <text wx:elif="{{canFreeDraw()}}">🎁 {{lang === 'zh' ? '免费抽一次' : 'Free draw'}}</text>
         <text wx:else>🎲 {{lang === 'zh' ? '抽奖 (50 积分)' : 'Draw (50 pts)'}}</text>
@@ -103,8 +112,18 @@
     </view>
   </view>
 
+  <!-- 抽奖记录骨架：数据未到先占位 -->
+  <view class="records" wx:if="{{loading && !draws.length}}">
+    <view class="records-title">
+      <text wx:if="{{lang === 'zh'}}">我的抽奖记录</text>
+      <text wx:else>My Draws</text>
+    </view>
+    <view class="record-skeleton"></view>
+    <view class="record-skeleton"></view>
+  </view>
+
   <!-- 抽奖记录 -->
-  <view class="records" wx:if="{{draws.length}}">
+  <view class="records" wx:elif="{{draws.length}}">
     <view class="records-title">
       <text wx:if="{{lang === 'zh'}}">我的抽奖记录</text>
       <text wx:else>My Draws</text>
@@ -164,7 +183,7 @@
   </view>
 
   <!-- 空状态 -->
-  <view class="empty" wx:elif="{{user}}">
+  <view class="empty" wx:elif="{{user && !loadError}}">
     <text class="empty-icon">🎰</text>
     <text wx:if="{{lang === 'zh'}}">还没有抽奖记录</text>
     <text wx:else>No draws yet</text>

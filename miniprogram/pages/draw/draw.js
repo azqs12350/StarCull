@@ -4,6 +4,11 @@ const auth = require('../../utils/auth.js');
 const PAID_DRAW_COST = 50;
 const FRAMED_UPGRADE_COST = 300;
 
+// 抽奖记录本地缓存：按用户隔离，30 分钟过期，最多存 30 条
+const DRAW_CACHE_KEY = 'sc_draw_cache_v1';
+const DRAW_CACHE_TTL = 30 * 60 * 1000;
+const DRAW_CACHE_LIMIT = 30;
+
 Page({
   data: {
     user: null,
@@ -11,6 +16,10 @@ Page({
     draws: [],
     points: 0,
     rolling: false,
+    drawing: false,
+    loading: true,
+    loadError: false,
+    needLogin: false,
     rollFrame: 0,
     rollFrames: [],
     showAddress: false,
@@ -55,6 +64,7 @@ Page({
     wx.setNavigationBarTitle({ title: lang === 'en' ? 'Draw' : '抽奖' });
 
     if (!auth.isLoggedIn()) {
+      this.setData({ needLogin: true, loading: false, loadError: false });
       wx.showModal({
         title: '需要登录',
         content: '请先登录或注册后参与抽奖',
@@ -66,24 +76,51 @@ Page({
       });
       return;
     }
+
+    // 先用本地缓存的用户 / 抽奖记录铺满界面，再后台刷新
+    const cachedUser = app.globalData.user || auth.getUser();
+    const cached = this._readDrawCache(cachedUser);
+
+    const patch = {
+      needLogin: false,
+      loadError: false,
+      user: cachedUser || null,
+      points: cached && cached.points != null ? cached.points : (cachedUser ? cachedUser.points || 0 : 0),
+      draws: cached ? cached.draws || [] : [],
+      loading: !cached
+    };
+    if (cached) {
+      patch.noneCount = cached.noneCount || 0;
+      patch.noneEmoji = cached.noneEmoji || '💪';
+      patch.noneText = cached.noneText || (lang === 'en' ? 'Try again!' : '再接再厉');
+    }
+    this.setData(patch);
+
     this.loadData();
   },
 
-  async loadData() {
+  async loadData(force) {
+    if (this._loadingData) {
+      if (force) this._reloadQueued = true;
+      return;
+    }
+    this._loadingData = true;
+
     try {
-      const session = await api.tokenSession();
-      const drawsData = await api.getDraws();
+      // 两个请求并行，缩短数据到达时间
+      const [session, drawsData] = await Promise.all([api.tokenSession(), api.getDraws()]);
       const app = getApp();
       app.globalData.user = session.user;
       app.globalData.products = session.products;
       app.globalData.latestDraw = session.draw;
+      auth.setUser(session.user);
 
       var drawsList = drawsData.draws || [];
-      var noneList = [];
+      var noneCount = 0;
       for (var k = 0; k < drawsList.length; k++) {
-        if (drawsList[k].prizeType === 'none') noneList.push(drawsList[k]);
+        if (drawsList[k].prizeType === 'none') noneCount++;
       }
-      var noneCount = noneList.length;
+
       var comforts = [
         { emoji: '💪', zh: '差一点就中了，再来！', en: 'So close! Try again!' },
         { emoji: '🌱', zh: '下次好运肯定轮到你', en: 'Luck is coming next time' },
@@ -94,19 +131,77 @@ Page({
       ];
       var comfort = comforts[Math.floor(Math.random() * comforts.length)];
       var lang = this.data.lang;
+      var points = drawsData.points != null ? drawsData.points : (session.user ? session.user.points : 0);
 
       this.setData({
         user: session.user,
         products: session.products,
         draws: drawsList,
-        points: drawsData.points != null ? drawsData.points : (session.user ? session.user.points : 0),
+        points: points,
+        noneCount: noneCount,
+        noneEmoji: comfort.emoji,
+        noneText: lang === 'en' ? comfort.en : comfort.zh,
+        loading: false,
+        loadError: false
+      });
+
+      this._writeDrawCache(session.user, drawsList, points, noneCount, comfort, lang);
+    } catch (e) {
+      console.warn('[draw] loadData failed:', e.message);
+      if (this.data.draws && this.data.draws.length) {
+        this.setData({ loading: false });
+        wx.showToast({
+          title: this.data.lang === 'zh' ? '刷新失败，显示上次数据' : 'Refresh failed, showing cached data',
+          icon: 'none'
+        });
+      } else {
+        this.setData({ loading: false, loadError: true });
+      }
+    } finally {
+      this._loadingData = false;
+      if (this._reloadQueued) {
+        this._reloadQueued = false;
+        this.loadData();
+      }
+    }
+  },
+
+  retryLoad() {
+    this.setData({ loading: true, loadError: false });
+    this.loadData();
+  },
+
+  _userKey(user) {
+    if (!user) return '';
+    return String(user.id || user.username || '');
+  },
+
+  _readDrawCache(user) {
+    if (!user) return null;
+    try {
+      const c = wx.getStorageSync(DRAW_CACHE_KEY);
+      if (!c || !c.draws || c.userKey !== this._userKey(user)) return null;
+      if (Date.now() - c.ts > DRAW_CACHE_TTL) return null;
+      return c;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  _writeDrawCache(user, draws, points, noneCount, comfort, lang) {
+    if (!user) return;
+    try {
+      wx.setStorageSync(DRAW_CACHE_KEY, {
+        userKey: this._userKey(user),
+        ts: Date.now(),
+        draws: draws.slice(0, DRAW_CACHE_LIMIT),
+        points: points,
         noneCount: noneCount,
         noneEmoji: comfort.emoji,
         noneText: lang === 'en' ? comfort.en : comfort.zh
       });
-
     } catch (e) {
-      // token 可能失效，跳登录
+      console.warn('[draw] cache write failed:', e.message);
     }
   },
 
@@ -140,7 +235,7 @@ Page({
   },
 
   async onDraw() {
-    if (this.data.rolling) return;
+    if (this.data.rolling || this.data.drawing) return;
     if (!auth.isLoggedIn()) {
       wx.navigateTo({ url: '/pages/login/login' });
       return;
@@ -152,13 +247,21 @@ Page({
       return;
     }
 
-    await this.startRolling();
+    // 点击即进入 pending，按钮立即禁用并显示「抽奖中…」
+    this.setData({ drawing: true });
 
     try {
+      await this.startRolling();
       const result = await api.draw();
-      this.stopRolling(result.draw);
+      this.stopRolling(result.draw, result.points, free);
     } catch (e) {
       this.stopRolling(null);
+      wx.showToast({
+        title: this.data.lang === 'zh' ? '抽奖失败，请重试' : 'Draw failed, please retry',
+        icon: 'none'
+      });
+    } finally {
+      this.setData({ drawing: false });
     }
   },
 
@@ -186,9 +289,18 @@ Page({
     });
   },
 
-  stopRolling(drawResult) {
-    this.setData({ rolling: false });
-    this.loadData();
+  stopRolling(drawResult, points, free) {
+    const patch = { rolling: false };
+    // 用抽奖接口返回值立即更新积分，不等 loadData 回来
+    if (points != null) {
+      patch.points = points;
+      patch['user.points'] = points;
+    }
+    if (free && drawResult && this.data.user) {
+      patch['user.freeDrawClaimed'] = true;
+    }
+    this.setData(patch);
+    this.loadData(true);
 
     if (!drawResult) return;
 
@@ -251,7 +363,7 @@ Page({
 
       wx.showToast({ title: '地址已保存', icon: 'success' });
       this.setData({ showAddress: false });
-      this.loadData();
+      this.loadData(true);
     } catch (e) {}
   },
 
@@ -266,7 +378,7 @@ Page({
       const res = await api.upgradeDraw(this.data.prizeResult.id);
       wx.hideLoading();
       wx.showToast({ title: '已升级为画框', icon: 'success' });
-      this.loadData();
+      this.loadData(true);
     } catch (e) { wx.hideLoading(); }
   },
 
@@ -435,7 +547,7 @@ Page({
         try {
           await api.cancelUpgrade(id);
           wx.showToast({ title: isZh ? '已取消，积分已返还' : 'Cancelled, points refunded', icon: 'success' });
-          self.loadData();
+          self.loadData(true);
         } catch (err) {}
       }
     });
