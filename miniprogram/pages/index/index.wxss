@@ -173,3 +173,10 @@
   font-size: 80rpx;
   margin-bottom: 16rpx;
 }
+
+.load-more {
+  text-align: center;
+  padding: 24rpx 0 48rpx;
+  color: #999999;
+  font-size: 24rpx;
+}

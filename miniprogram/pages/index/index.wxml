@@ -42,7 +42,6 @@
       class="grid-item"
       data-id="{{item.id}}"
       bindtap="goDetail"
-      wx:if="{{activeCategory === 'all' || (item.seriesZh || item.seriesEn) === activeCategory}}"
     >
       <image class="grid-img" src="{{item.image}}" mode="aspectFill" lazy-load="true" />
       <view class="grid-info">
@@ -63,6 +62,14 @@
         </view>
       </view>
     </view>
+  </view>
+
+  <!-- 加载更多 / 到底提示 -->
+  <view class="load-more" wx:if="{{!loading && loadingMore}}">
+    <text>{{lang === 'zh' ? '加载中...' : 'Loading...'}}</text>
+  </view>
+  <view class="load-more" wx:elif="{{!loading && !loadingMore && noMore && products.length > 0}}">
+    <text>{{lang === 'zh' ? '没有更多了' : 'No more works'}}</text>
   </view>
 
   <!-- 空状态 -->
