@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>StarCull — A Private Selection</title>
+<meta name="description" content="Star the pieces you would hang on your wall. A private selection for friends of the studio." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext y='19' font-size='18'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="/css/base.css" />
+<link rel="stylesheet" href="/css/auth.css" />
+<link rel="stylesheet" href="/css/shell.css" />
+<link rel="stylesheet" href="/css/collection.css" />
+<link rel="stylesheet" href="/css/draw.css" />
+<link rel="stylesheet" href="/css/studio.css" />
+<link rel="stylesheet" href="/css/lottery.css" />
+<link rel="stylesheet" href="/css/overlays.css" />
+<link rel="stylesheet" href="/css/messages.css" />
+<link rel="stylesheet" href="/css/responsive.css" />
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<!-- ================= AUTH ================= -->
+<main id="auth" class="auth" hidden>
+  <section class="auth-visual">
+    <img id="auth-image" alt="Selected artwork from the studio" />
+    <div class="auth-visual-top">StarCull</div>
+    <div class="lang-switch lang-switch-auth" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="zh">中文</button>
+      <button type="button" class="lang-btn" data-lang="en">EN</button>
+      <button type="button" class="lang-btn" data-lang="es">ES</button>
+    </div>
+    <div class="auth-visual-caption" data-i18n="auth.caption">Private selection · Friends of the studio</div>
+  </section>
+
+  <section class="auth-panel">
+    <div class="auth-inner">
+      <p class="kicker" data-i18n="auth.kicker">The quiet collection</p>
+      <h1 class="auth-title" data-i18n="auth.title">A private selection<br /><em>for friends of the studio.</em></h1>
+      <p class="auth-lede" data-i18n="auth.lede">Star the pieces you would hang on your wall. When you are done, the draw opens — and one painting is gifted to you.</p>
+
+      <div class="switch" role="tablist">
+        <button type="button" class="switch-btn is-on" data-mode="login" role="tab" aria-selected="true" data-i18n="auth.signin">Sign in</button>
+        <button type="button" class="switch-btn" data-mode="register" role="tab" aria-selected="false" data-i18n="auth.register">Create account</button>
+      </div>
+
+      <form id="auth-form" autocomplete="on" novalidate>
+        <label class="field">
+          <span data-i18n="auth.account">Account</span>
+          <input id="username" name="username" type="text" autocomplete="username" spellcheck="false" required />
+        </label>
+        <label class="field">
+          <span data-i18n="auth.password">Password</span>
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+        </label>
+
+        <!-- Security question block: shown only in register mode -->
+        <div id="register-security" hidden>
+          <div class="security-warning" data-i18n="auth.securityWarning">
+            ⚠ 这是你<strong>唯一</strong>可以找回密码的渠道，请务必牢记问题与答案！
+          </div>
+          <label class="field">
+            <span data-i18n="auth.securityQuestion">Security question</span>
+            <select id="security-question" name="securityQuestion" required>
+              <option value="" data-i18n="auth.selectQuestion">— Select a question —</option>
+            </select>
+          </label>
+          <label class="field">
+            <span data-i18n="auth.securityAnswer">Your answer</span>
+            <input id="security-answer" name="securityAnswer" type="text" autocomplete="off" spellcheck="false" required />
+          </label>
+        </div>
+
+        <p class="auth-hint" id="auth-hint">Use the account name and password you were given.</p>
+        <p class="form-error" id="auth-error" role="alert"></p>
+
+        <button class="btn btn-primary btn-block" id="auth-submit" type="submit">Enter the collection</button>
+
+        <p class="auth-forgot" id="auth-forgot-wrap" hidden>
+          <button type="button" class="link-btn" id="forgot-password-btn" data-i18n="auth.forgotPassword">Forgot password?</button>
+        </p>
+      </form>
+
+      <p class="auth-foot" data-i18n="auth.foot">No email, no verification. An account name and a password are all it takes.</p>
+    </div>
+  </section>
+</main>
+
+<!-- ================= APP ================= -->
+<div id="app" class="app" hidden>
+  <header class="masthead">
+    <button class="wordmark" id="go-home">StarCull<span class="wordmark-dot">.</span></button>
+    <nav class="masthead-nav">
+      <span class="who" id="who"></span>
+      <span class="points-badge" id="points-badge" hidden><span class="points-icon">✦</span><span id="points-value">0</span></span>
+      <button class="msg-bell" id="msg-bell" hidden title="" data-i18n-ph="messages.title" aria-label="Messages">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path fill="currentColor" d="M12 2a1 1 0 0 0-1 1v1.07A7 7 0 0 0 5 11v4.5l-1.5 2h17L19 15.5V11a7 7 0 0 0-6-6.93V3a1 1 0 0 0-1-1Zm-2 18h4a2 2 0 0 1-4 0Z"/>
+        </svg>
+        <span class="bell-dot" id="bell-dot" hidden></span>
+      </button>
+      <button class="link" id="prizes-btn" hidden data-i18n="nav.prizes">My prizes</button>
+      <button class="link" id="messages-btn" hidden data-i18n="nav.messages">Messages</button>
+      <button class="link" id="studio-btn" hidden data-i18n="nav.studio">Studio</button>
+      <button class="link" id="signout" data-i18n="nav.signout">Sign out</button>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" class="lang-btn" data-lang="zh">中文</button>
+        <button type="button" class="lang-btn" data-lang="en">EN</button>
+        <button type="button" class="lang-btn" data-lang="es">ES</button>
+      </div>
+    </nav>
+  </header>
+
+  <div id="collection-view">
+    <section class="intro">
+      <div class="intro-left">
+        <p class="kicker">Private selection · <span id="season">Autumn 2026</span></p>
+        <h1 class="intro-title" data-i18n="intro.title">Choose what we <em>make</em> next.</h1>
+      </div>
+      <div class="intro-right">
+        <p class="lede" data-i18n="intro.lede">Star the pieces you would hang on your wall. Tap again to take it back. When you are done, the draw opens — one piece is yours.</p>
+        <p class="intro-meta"><span id="piece-count">0 pieces</span><span class="sep">/</span><span id="star-summary">0 starred</span></p>
+      </div>
+    </section>
+
+    <div class="toolbar">
+      <span class="kicker" id="grid-label">The collection</span>
+      <div class="toolbar-right">
+        <div class="pills" id="category-pills" hidden></div>
+        <button class="chip" id="starred-filter" aria-pressed="false" data-i18n="collection.starredOnly">Starred only</button>
+      </div>
+    </div>
+
+    <section class="grid" id="grid" aria-live="polite"></section>
+    <p class="empty" id="empty" hidden>Nothing starred yet. Tap a star on any piece.</p>
+
+    <div class="pager" id="pager" hidden>
+      <button class="pager-btn" id="page-prev" type="button" aria-label="Previous page" data-i18n-aria="pager.prev">‹</button>
+      <span class="pager-label" id="page-indicator">1 / 1</span>
+      <button class="pager-btn" id="page-next" type="button" aria-label="Next page" data-i18n-aria="pager.next">›</button>
+    </div>
+
+    <footer class="colophon">
+      <span>StarCull</span>
+      <span class="colophon-mid" data-i18n="colophon">Hand-finished prints · Made in small batches</span>
+      <span id="year"></span>
+    </footer>
+
+    <!-- ================= TRAY ================= -->
+    <div class="tray" id="tray" hidden>
+      <div class="tray-inner">
+        <div class="tray-text">
+          <span class="tray-count" id="tray-count">0</span>
+          <span id="tray-label">piece starred</span>
+          <span class="sep">·</span>
+          <span class="tray-sub" id="tray-sub">The draw unlocks after your first star</span>
+        </div>
+        <div class="tray-actions">
+          <button class="btn btn-primary" id="draw-btn" data-i18n="tray.draw">Enter the draw</button>
+          <button class="tray-gift" id="tray-gift-btn" hidden data-i18n="tray.viewGift">View your gift</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- STUDIO ---------- -->
+  <section class="studio" id="studio-view" hidden>
+    <div class="studio-head">
+      <button class="link back" id="back-btn" data-i18n="studio.back">← Back to collection</button>
+      <h1 class="studio-title" data-i18n="studio.title">The studio</h1>
+      <p class="kicker" data-i18n="studio.kicker">Upload pieces · Read the room · Hand out the gifts</p>
+    </div>
+
+    <nav class="studio-tabs" role="tablist" aria-label="Studio sections">
+      <button type="button" class="studio-tab is-on" data-studio-tab="collection" role="tab" aria-selected="true" data-i18n="studio.theCollection">The collection</button>
+      <button type="button" class="studio-tab" data-studio-tab="upload" role="tab" aria-selected="false" data-i18n="studio.addPiece">Add a piece</button>
+      <button type="button" class="studio-tab" data-studio-tab="draws" role="tab" aria-selected="false" data-i18n="studio.drawResults">Draw results</button>
+      <button type="button" class="studio-tab" data-studio-tab="settings" role="tab" aria-selected="false" data-i18n="studio.drawSettings">Draw settings</button>
+      <button type="button" class="studio-tab" data-studio-tab="accounts" role="tab" aria-selected="false" data-i18n="studio.accounts">Accounts</button>
+      <button type="button" class="studio-tab" data-studio-tab="messages" role="tab" aria-selected="false" data-i18n="studio.messages">Messages</button>
+    </nav>
+
+    <section class="studio-panel" data-studio-panel="upload" hidden>
+      <section class="panel">
+        <h2 class="panel-title" data-i18n="studio.addPiece">Add a piece</h2>
+        <form id="upload-form" class="upload-form">
+          <div class="dropzone" id="dropzone" tabindex="0">
+            <input type="file" id="file-input" accept="image/*" hidden />
+            <img id="upload-preview" alt="" hidden />
+            <div class="dropzone-msg" id="dropzone-msg">
+              <span class="dropzone-plus">+</span>
+              <span data-i18n="studio.drop">Drop an image, or click to browse</span>
+              <small data-i18n="studio.dropHint">JPG, PNG or WEBP · up to 15 MB</small>
+            </div>
+          </div>
+
+          <div class="bilingual-field">
+            <label class="field field-with-action">
+              <span data-i18n="studio.titleZh">标题（中）</span>
+              <input name="titleZh" type="text" data-i18n-ph="studio.titleZhPh" placeholder="07号 — 无题" required />
+              <button type="button" class="translate-btn" data-from="titleZh" data-to="titleEn" title="译">译</button>
+            </label>
+            <label class="field">
+              <span data-i18n="studio.titleEn">Title (EN)</span>
+              <input name="titleEn" type="text" data-i18n-ph="studio.titlePh" placeholder="No. 07 — Untitled" />
+            </label>
+          </div>
+
+          <div class="bilingual-field">
+            <label class="field field-with-action">
+              <span data-i18n="studio.seriesZh">系列（中）<small data-i18n="studio.optional">optional</small></span>
+              <input name="seriesZh" type="text" list="series-options" data-i18n-ph="studio.seriesZhPh" placeholder="静谧房间" autocomplete="off" />
+              <button type="button" class="translate-btn" data-from="seriesZh" data-to="seriesEn" title="译">译</button>
+            </label>
+            <label class="field">
+              <span data-i18n="studio.seriesEn">Series (EN) <small data-i18n="studio.optional">optional</small></span>
+              <input name="seriesEn" type="text" list="series-options-en" data-i18n-ph="studio.seriesPh" placeholder="Quiet Rooms" autocomplete="off" />
+              <datalist id="series-options-en"></datalist>
+              <datalist id="series-options"></datalist>
+            </label>
+          </div>
+
+          <div class="bilingual-field">
+            <label class="field field-with-action">
+              <span data-i18n="studio.noteZh">备注（中）<small data-i18n="studio.optional">optional</small></span>
+              <input name="noteZh" type="text" data-i18n-ph="studio.noteZhPh" placeholder="关于这幅作品的一句话" />
+              <button type="button" class="translate-btn" data-from="noteZh" data-to="noteEn" title="译">译</button>
+            </label>
+            <label class="field">
+              <span data-i18n="studio.noteEn">Note (EN) <small data-i18n="studio.optional">optional</small></span>
+              <input name="noteEn" type="text" data-i18n-ph="studio.notePh" placeholder="A line about the piece" />
+            </label>
+          </div>
+
+          <p class="form-error" id="upload-error" role="alert"></p>
+          <button class="btn btn-primary btn-block" type="submit" id="upload-submit" data-i18n="studio.submit">Add to the collection</button>
+        </form>
+      </section>
+    </section>
+
+    <section class="studio-panel" data-studio-panel="draws" hidden>
+      <section class="panel">
+        <h2 class="panel-title"><span data-i18n="studio.drawResults">Draw results</span> <span class="count-tag" id="draw-count"></span></h2>
+        <div class="draw-list" id="draw-list"></div>
+      </section>
+    </section>
+
+    <section class="studio-panel" data-studio-panel="settings" hidden>
+      <section class="panel">
+        <h2 class="panel-title" data-i18n="studio.drawSettings">Draw settings</h2>
+        <form id="settings-form" class="upload-form">
+          <label class="field">
+            <span data-i18n="studio.winRate">Win rate %</span>
+            <input name="winRate" type="number" min="0" max="100" step="0.1" required />
+          </label>
+          <label class="field">
+            <span data-i18n="studio.framedRate">Framed share of wins %</span>
+            <input name="framedRate" type="number" min="0" max="100" step="0.1" required />
+          </label>
+          <label class="field">
+            <span data-i18n="studio.starWeight">Star weight %</span>
+            <input name="starWeight" type="number" min="0" max="1000" step="0.1" required />
+            <small class="field-hint" data-i18n="studio.starWeightHint">100 = starred pieces are twice as likely</small>
+          </label>
+          <p class="form-error" id="settings-error" role="alert"></p>
+          <button class="btn btn-primary btn-block" type="submit" data-i18n="studio.saveSettings">Save settings</button>
+        </form>
+      </section>
+    </section>
+
+    <section class="studio-panel" data-studio-panel="collection">
+      <section class="panel panel-wide">
+        <h2 class="panel-title"><span data-i18n="studio.theCollection">The collection</span> <span class="count-tag" id="studio-count"></span></h2>
+        <div class="pills studio-pills" id="studio-pills" hidden></div>
+        <div class="studio-list" id="studio-list"></div>
+        <div class="pager studio-pager" id="studio-pager" hidden>
+          <button class="pager-btn" id="studio-page-prev" type="button" aria-label="Previous page" data-i18n-aria="pager.prev">‹</button>
+          <span class="pager-label" id="studio-page-indicator">1 / 1</span>
+          <button class="pager-btn" id="studio-page-next" type="button" aria-label="Next page" data-i18n-aria="pager.next">›</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="studio-panel" data-studio-panel="accounts" hidden>
+      <section class="panel panel-wide">
+        <h2 class="panel-title"><span data-i18n="studio.accounts">Accounts</span> <span class="count-tag" id="account-count"></span></h2>
+        <form class="account-add" id="account-add-form">
+          <input name="username" type="text" data-i18n-ph="studio.newUserPh" placeholder="New account name" autocomplete="off" required />
+          <input name="password" type="text" data-i18n-ph="studio.newPassPh" placeholder="Password (min 6)" autocomplete="off" required />
+          <select name="securityQuestion" id="account-add-question" data-i18n-ph="studio.accountQuestionPh">
+            <option value="" data-i18n="studio.accountQuestionPh">Security question (optional)</option>
+          </select>
+          <input name="securityAnswer" type="text" data-i18n-ph="studio.accountAnswerPh" placeholder="Answer (optional)" autocomplete="off" />
+          <button class="btn btn-primary" type="submit" data-i18n="studio.createAccount">Create</button>
+        </form>
+        <p class="form-error" id="account-error" role="alert"></p>
+        <div class="account-table" id="account-table"></div>
+      </section>
+    </section>
+
+    <!-- ============ STUDIO · MESSAGES PANEL ============ -->
+    <section class="studio-panel studio-panel-messages" data-studio-panel="messages" hidden>
+      <aside class="messages-sidebar">
+        <h3 class="panel-title"><span data-i18n="studio.messages">Messages</span> <span class="count-tag" id="studio-msg-unread"></span></h3>
+        <div class="studio-threads-list" id="studio-threads-list"></div>
+      </aside>
+      <div class="messages-main">
+        <div class="messages-thread" id="studio-thread-view">
+          <p class="list-empty" data-i18n="studio.msgPickThread">Pick a conversation from the left to read</p>
+        </div>
+        <div class="messages-composer" id="studio-reply-wrap" hidden>
+          <textarea id="studio-msg-input" rows="2" maxlength="800" data-i18n-ph="studio.msgReplyPh" placeholder="Reply to this user..."></textarea>
+          <button class="btn btn-primary" id="studio-msg-send" type="button" data-i18n="studio.msgSend">Send</button>
+        </div>
+      </div>
+    </section>
+  </section>
+
+  <!-- ---------- MY PRIZES ---------- -->
+  <section class="prizes" id="prizes-view" hidden>
+    <div class="studio-head">
+      <button class="link back" id="prizes-back" data-i18n="studio.back">← Back to collection</button>
+      <h1 class="studio-title" data-i18n="prizes.title">My prizes</h1>
+      <p class="kicker" data-i18n="prizes.kicker">Your draw history and shipping details</p>
+    </div>
+    <div class="prizes-list" id="prizes-list"></div>
+    <p class="empty" id="prizes-empty" hidden data-i18n="prizes.empty">No draws yet. Enter the draw to win a piece.</p>
+  </section>
+
+  <!-- ================ USER · MESSAGES VIEW ================ -->
+  <section class="messages-view" id="messages-view" hidden>
+    <div class="studio-head">
+      <button class="link back" id="messages-back" data-i18n="studio.back">← Back to collection</button>
+      <h1 class="studio-title" data-i18n="messages.title">Messages</h1>
+      <p class="kicker" data-i18n="messages.kicker">Talk to the studio about your order, shipping, or anything</p>
+    </div>
+    <div class="messages-thread" id="messages-thread"></div>
+    <div class="messages-composer">
+      <textarea id="messages-input" rows="2" maxlength="800" placeholder=""></textarea>
+      <button class="btn btn-primary" id="messages-send" type="button" data-i18n="messages.send">Send</button>
+    </div>
+  </section>
+</div>
+
+<!-- ================= LIGHTBOX ================= -->
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lightbox-close" id="lightbox-close" aria-label="Close">✕</button>
+  <figure class="lightbox-figure">
+    <div class="lightbox-media"><img id="lightbox-image" alt="" /></div>
+    <figcaption class="lightbox-meta">
+      <p class="kicker" id="lightbox-series"></p>
+      <h2 class="lightbox-title" id="lightbox-title"></h2>
+      <p class="lightbox-note" id="lightbox-note"></p>
+      <div class="lightbox-actions">
+        <button class="star star-large" id="lightbox-star" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.4l2.55 5.6 6.05.68-4.5 4.1 1.22 6.02L12 16.75 6.68 19.8l1.22-6.02-4.5-4.1 6.05-.68z" /></svg>
+          <span data-i18n="piece.star">Star this piece</span>
+        </button>
+        <button class="vote vote-like star-large" id="lightbox-like" aria-pressed="false" aria-label="Like">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10h3v11H2zM21 10a2 2 0 0 0-2-2h-5.6l.9-4.3a1.6 1.6 0 0 0-3-.8L7.7 9.4A2 2 0 0 0 7 11v8a2 2 0 0 0 2 2h9.4a2 2 0 0 0 1.95-1.6l1.3-6A2 2 0 0 0 21 10z" /></svg>
+          <span class="count"></span>
+        </button>
+        <button class="vote vote-dislike star-large" id="lightbox-dislike" aria-pressed="false" aria-label="Dislike">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 14h-3V3h3zM3 14a2 2 0 0 0 2 2h5.6l-.9 4.3a1.6 1.6 0 0 0 3 .8l5.6-6.5A2 2 0 0 0 17 13V5a2 2 0 0 0-2-2H5.6A2 2 0 0 0 3.65 4.6l-1.3 6A2 2 0 0 0 3 14z" /></svg>
+          <span class="count"></span>
+        </button>
+      </div>
+    </figcaption>
+  </figure>
+</div>
+
+<!-- ================= DRAW ================= -->
+<div class="draw" id="draw" hidden>
+  <div class="draw-brand">StarCull<span>.</span></div>
+  <div class="draw-stage">
+    <div class="draw-rolling" id="draw-rolling">
+      <p class="kicker" data-i18n="draw.kicker">The draw</p>
+      <div class="slot" id="slot">…</div>
+      <p class="draw-sub" data-i18n="draw.sub">One piece, chosen for you.</p>
+    </div>
+
+    <div class="draw-result" id="draw-result" hidden>
+      <p class="kicker" id="result-kicker" data-i18n="draw.gifted">You have been gifted</p>
+
+      <div class="result-prize" id="result-prize" hidden>
+        <div class="result-media"><img id="result-image" alt="" /></div>
+        <h2 class="result-title" id="result-title"></h2>
+        <p class="result-series" id="result-series"></p>
+        <div class="result-type" id="result-type"></div>
+        <p class="result-note" id="result-note" data-i18n="draw.note">Show this code to the studio to arrange your painting.</p>
+        <div class="code" id="result-code"></div>
+      </div>
+
+      <div class="result-none" id="result-none" hidden>
+        <p class="result-none-text" data-i18n="draw.noneText">No prize this time — better luck next draw!</p>
+        <button class="btn btn-primary" id="result-close-none" data-i18n="draw.close">Back to the collection</button>
+      </div>
+
+      <!-- Shipping form -->
+      <form id="shipping-form" class="shipping-form" hidden>
+        <h3 class="shipping-title" data-i18n="shipping.title">Shipping details</h3>
+        <p class="shipping-sub" data-i18n="shipping.sub">Fill in your address so we can ship your prize. Most customers are in the USA.</p>
+
+        <div class="shipping-grid">
+          <label class="field">
+            <span data-i18n="shipping.name">Full name *</span>
+            <input name="name" type="text" required />
+          </label>
+          <label class="field">
+            <span data-i18n="shipping.phone">Phone *</span>
+            <input name="phone" type="tel" required />
+          </label>
+          <label class="field field-wide">
+            <span data-i18n="shipping.email">Email</span>
+            <input name="email" type="email" />
+          </label>
+          <label class="field field-wide">
+            <span data-i18n="shipping.address1">Address line 1 *</span>
+            <input name="address1" type="text" required />
+          </label>
+          <label class="field field-wide">
+            <span data-i18n="shipping.address2">Address line 2</span>
+            <input name="address2" type="text" />
+          </label>
+          <label class="field">
+            <span data-i18n="shipping.city">City *</span>
+            <input name="city" type="text" required />
+          </label>
+          <label class="field">
+            <span data-i18n="shipping.state">State / Province *</span>
+            <input name="state" type="text" aria-required="true" />
+          </label>
+          <label class="field">
+            <span data-i18n="shipping.zip">ZIP / Postal code *</span>
+            <input name="zip" type="text" aria-required="true" />
+          </label>
+          <label class="field">
+            <span data-i18n="shipping.country">Country *</span>
+            <select name="country" required>
+              <option value="USA" selected>United States</option>
+              <option value="Canada">Canada</option>
+              <option value="Mexico">Mexico</option>
+              <option value="UK">United Kingdom</option>
+              <option value="Australia">Australia</option>
+              <option value="China">China / 中国</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="upgrade-option" id="upgrade-option" hidden>
+          <input type="checkbox" name="upgradeToFramed" id="upgrade-checkbox" />
+          <span data-i18n="shipping.upgrade" data-i18n-vars='{"cost":300}'>Upgrade to a framed print (+300 points)</span>
+        </label>
+
+        <label class="privacy-check">
+          <input type="checkbox" id="privacy-checkbox" required />
+          <span data-i18n="shipping.privacy">I agree that my shipping information will only be used to deliver this prize and will never be shared or leaked.</span>
+        </label>
+
+        <p class="form-error" id="shipping-error" role="alert"></p>
+
+        <div class="shipping-actions">
+          <button class="btn btn-primary" type="submit" id="shipping-submit" data-i18n="shipping.submit">Submit &amp; confirm</button>
+          <button class="btn btn-ghost" type="button" id="shipping-cancel" data-i18n="shipping.cancel">Cancel &amp; refund</button>
+          <button class="btn btn-primary" type="button" id="result-close" data-i18n="draw.close">Back to the collection</button>
+        </div>
+      </form>
+
+      <div class="shipping-confirmed" id="shipping-confirmed" hidden>
+        <p class="confirmed-text" data-i18n="shipping.confirmed">Shipping details confirmed. We will notify you once your prize is on its way.</p>
+        <button class="btn btn-ghost" type="button" id="shipping-edit" data-i18n="shipping.edit">Edit / cancel</button>
+        <button class="btn btn-primary" type="button" id="result-close-confirmed" data-i18n="draw.close">Back to the collection</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<!-- ================= LOGIN BONUS POPUP ================= -->
+<div class="bonus-modal" id="bonus-modal" hidden>
+  <div class="bonus-card">
+    <div class="bonus-star">✦</div>
+    <h2 class="bonus-title" data-i18n="bonus.title">Daily bonus</h2>
+    <p class="bonus-amount"><span id="bonus-amount">+10</span> <span data-i18n="points.label">points</span></p>
+    <p class="bonus-desc" data-i18n="bonus.desc">Thank you for visiting today. Come back tomorrow for more.</p>
+    <button class="btn btn-primary" id="bonus-close" data-i18n="bonus.close">Got it</button>
+  </div>
+</div>
+
+<!-- ================= PRODUCT EDITOR MODAL ================= -->
+<div class="modal-backdrop" id="product-edit-modal" hidden>
+  <div class="modal-card">
+    <button class="modal-close" id="product-edit-close" aria-label="Close">✕</button>
+    <h2 class="modal-title" data-i18n="studio.editPiece">Edit piece</h2>
+    <form id="product-edit-form" class="upload-form">
+      <div class="bilingual-field">
+        <label class="field field-with-action">
+          <span data-i18n="studio.titleZh">标题（中）</span>
+          <input name="titleZh" type="text" />
+          <button type="button" class="translate-btn" data-from="titleZh" data-to="titleEn" title="译">译</button>
+        </label>
+        <label class="field">
+          <span data-i18n="studio.titleEn">Title (EN)</span>
+          <input name="titleEn" type="text" />
+        </label>
+      </div>
+      <div class="bilingual-field">
+        <label class="field field-with-action">
+          <span data-i18n="studio.seriesZh">系列（中）<small data-i18n="studio.optional">optional</small></span>
+          <input name="seriesZh" type="text" />
+          <button type="button" class="translate-btn" data-from="seriesZh" data-to="seriesEn" title="译">译</button>
+        </label>
+        <label class="field">
+          <span data-i18n="studio.seriesEn">Series (EN) <small data-i18n="studio.optional">optional</small></span>
+          <input name="seriesEn" type="text" />
+        </label>
+      </div>
+      <div class="bilingual-field">
+        <label class="field field-with-action">
+          <span data-i18n="studio.noteZh">备注（中）<small data-i18n="studio.optional">optional</small></span>
+          <input name="noteZh" type="text" />
+          <button type="button" class="translate-btn" data-from="noteZh" data-to="noteEn" title="译">译</button>
+        </label>
+        <label class="field">
+          <span data-i18n="studio.noteEn">Note (EN) <small data-i18n="studio.optional">optional</small></span>
+          <input name="noteEn" type="text" />
+        </label>
+      </div>
+      <p class="form-error" id="product-edit-error" role="alert"></p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" type="submit" id="product-edit-save" data-i18n="studio.save">Save</button>
+        <button class="btn btn-ghost" type="button" id="product-edit-cancel" data-i18n="studio.cancel">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= PASSWORD RECOVERY MODAL ================= -->
+<div class="modal-backdrop" id="recover-modal" hidden>
+  <div class="modal-card">
+    <button class="modal-close" id="recover-close" aria-label="Close">✕</button>
+    <h2 class="modal-title" data-i18n="recover.title">Recover password</h2>
+
+    <!-- Step 1: enter username -->
+    <form id="recover-step1" class="upload-form" novalidate>
+      <p class="modal-lede" data-i18n="recover.step1Lede">Enter your account name and we will show your security question.</p>
+      <label class="field">
+        <span data-i18n="auth.account">Account</span>
+        <input id="recover-username" type="text" autocomplete="username" required />
+      </label>
+      <p class="form-error" id="recover-error" role="alert"></p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" type="submit" data-i18n="recover.next">Next</button>
+        <button class="btn btn-ghost" type="button" id="recover-cancel1" data-i18n="studio.cancel">Cancel</button>
+      </div>
+    </form>
+
+    <!-- Step 2: answer question + set new password -->
+    <form id="recover-step2" class="upload-form" novalidate hidden>
+      <p class="modal-lede"><span data-i18n="recover.yourQuestion">Your question:</span> <strong id="recover-question-text"></strong></p>
+      <label class="field">
+        <span data-i18n="auth.securityAnswer">Your answer</span>
+        <input id="recover-answer" type="text" autocomplete="off" spellcheck="false" required />
+      </label>
+      <label class="field">
+        <span data-i18n="recover.newPassword">New password</span>
+        <input id="recover-new-password" type="password" autocomplete="new-password" required />
+      </label>
+      <p class="form-error" id="recover-error2" role="alert"></p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" type="submit" data-i18n="recover.reset">Reset password</button>
+        <button class="btn btn-ghost" type="button" id="recover-back" data-i18n="recover.back">Back</button>
+      </div>
+    </form>
+
+    <!-- Step 3: success -->
+    <div id="recover-step3" hidden>
+      <p class="modal-lede" data-i18n="recover.success">Your password has been reset. You can now sign in with the new password.</p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" type="button" id="recover-done" data-i18n="auth.signin">Sign in</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= FORCED SECURITY QUESTION SETUP MODAL ================= -->
+<div class="modal-backdrop" id="sq-setup-modal" hidden>
+  <div class="modal-card">
+    <div class="modal-lang">
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" class="lang-btn" data-lang="zh">中文</button>
+        <button type="button" class="lang-btn" data-lang="en">EN</button>
+        <button type="button" class="lang-btn" data-lang="es">ES</button>
+      </div>
+    </div>
+    <h2 class="modal-title" data-i18n="sqSetup.title">Set your security question</h2>
+    <div class="security-warning security-warning-large" data-i18n="sqSetup.warning">
+      ⚠ 这是你<strong>唯一</strong>可以找回密码的渠道！<br />请务必牢记问题与答案，忘记后将无法找回账号。
+    </div>
+    <form id="sq-setup-form" class="upload-form" novalidate>
+      <label class="field">
+        <span data-i18n="auth.securityQuestion">Security question</span>
+        <select id="sq-setup-question" name="securityQuestion" required>
+          <option value="" data-i18n="auth.selectQuestion">— Select a question —</option>
+        </select>
+      </label>
+      <label class="field">
+        <span data-i18n="auth.securityAnswer">Your answer</span>
+        <input id="sq-setup-answer" name="securityAnswer" type="text" autocomplete="off" spellcheck="false" required />
+      </label>
+      <p class="form-error" id="sq-setup-error" role="alert"></p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" type="submit" id="sq-setup-save" data-i18n="sqSetup.save">Save &amp; continue</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= STUDIO · MARK SHIPPED MODAL ================= -->
+<div class="modal-backdrop" id="studio-ship-modal" hidden>
+  <div class="modal-card">
+    <button class="modal-close" id="studio-ship-close" aria-label="Close">✕</button>
+    <h2 class="modal-title" data-i18n="studio.shipTitle">Mark shipped</h2>
+    <form id="studio-ship-form" class="upload-form" novalidate>
+      <label class="field">
+        <span data-i18n="studio.courier">Courier</span>
+        <select name="courierPlatform" id="studio-courier-platform" required>
+          <!-- options populated by JS -->
+        </select>
+      </label>
+      <label class="field">
+        <span data-i18n="studio.courierCustom">Custom courier name</span>
+        <input name="courierCustom" type="text" data-i18n-ph="studio.courierCustomPh" placeholder="Only for Other" />
+      </label>
+      <label class="field">
+        <span data-i18n="studio.tracking">Tracking number *</span>
+        <input name="trackingNumber" type="text" required />
+      </label>
+      <p class="form-error" id="studio-ship-error" role="alert"></p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" type="submit" data-i18n="studio.btnShip">Mark shipped</button>
+        <button class="btn btn-ghost" type="button" id="studio-ship-cancel" data-i18n="studio.cancel">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/core.js"></script>
+<script src="/js/i18n.data.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/dom.js"></script>
+<script src="/js/helpers.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/collection.js"></script>
+<script src="/js/draw.js"></script>
+<script src="/js/prizes.js"></script>
+<script src="/js/studio.js"></script>
+<script src="/js/messages.js"></script>
+<script src="/js/main.js"></script>
+</body>
+</html>

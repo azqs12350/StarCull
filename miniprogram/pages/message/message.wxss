@@ -1,0 +1,114 @@
+/* pages/message/message.wxss */
+
+.page {
+  height: 100%;
+  background: #fafaf7;
+  /* 底部留出输入栏高度，避免消息被遮挡 */
+  padding-bottom: calc(100rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.msg-list {
+  padding: 24rpx;
+  box-sizing: border-box;
+}
+
+.msg-empty {
+  text-align: center;
+  padding: 160rpx 40rpx;
+  color: #999999;
+}
+
+.empty-icon {
+  display: block;
+  font-size: 80rpx;
+  margin-bottom: 16rpx;
+}
+
+.msg-row {
+  margin-bottom: 20rpx;
+  display: flex;
+}
+
+.msg-row.mine {
+  justify-content: flex-end;
+}
+
+.msg-row.theirs {
+  justify-content: flex-start;
+}
+
+.msg-bubble {
+  max-width: 72%;
+  padding: 20rpx 24rpx;
+  border-radius: 20rpx;
+  position: relative;
+}
+
+.msg-row.mine .msg-bubble {
+  background: #1a1a1a;
+  color: #ffffff;
+  border-bottom-right-radius: 4rpx;
+}
+
+.msg-row.theirs .msg-bubble {
+  background: #ffffff;
+  color: #1a1a1a;
+  border-bottom-left-radius: 4rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.05);
+}
+
+.msg-text {
+  font-size: 28rpx;
+  line-height: 1.5;
+  display: block;
+  word-break: break-all;
+}
+
+.msg-time {
+  font-size: 20rpx;
+  opacity: 0.55;
+  margin-top: 8rpx;
+  display: block;
+}
+
+.input-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: 12rpx 24rpx;
+  background: #ffffff;
+  border-top: 1rpx solid #ececea;
+  box-sizing: border-box;
+}
+
+.msg-input {
+  flex: 1;
+  height: 76rpx;
+  background: #f6f6f3;
+  border-radius: 38rpx;
+  padding: 0 28rpx;
+  font-size: 28rpx;
+  margin-right: 8rpx;
+}
+
+.send-btn {
+  width: 100rpx;
+  height: 76rpx;
+  background: #1a1a1a;
+  color: #ffffff;
+  border-radius: 38rpx;
+  font-size: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.send-btn-disabled {
+  background: #cccccc;
+  color: #ffffff;
+}

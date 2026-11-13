@@ -1,0 +1,90 @@
+/* StarCull · shell — 页头与语言切换 */
+
+/* ============ masthead ============ */
+
+.app { min-height: 100vh; }
+
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 13px var(--gutter);
+  background: rgba(242, 239, 231, 0.86);
+  backdrop-filter: blur(16px) saturate(1.1);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.wordmark {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-family: var(--serif);
+  font-size: 21px;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+.wordmark-dot { color: var(--gold); }
+
+.masthead-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* ============ language switch ============ */
+
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(23, 21, 15, 0.03);
+}
+
+.lang-btn {
+  border: 0;
+  background: transparent;
+  padding: 5px 10px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  cursor: pointer;
+  border-radius: 999px;
+  transition: background 0.3s var(--ease), color 0.3s var(--ease);
+}
+.lang-btn:hover { color: var(--ink); }
+.lang-btn.is-on {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.lang-switch-auth {
+  position: absolute;
+  top: 34px;
+  right: 38px;
+  z-index: 2;
+  border-color: rgba(250, 247, 239, 0.3);
+  background: rgba(20, 18, 12, 0.25);
+}
+.lang-switch-auth .lang-btn { color: rgba(250, 247, 239, 0.75); }
+.lang-switch-auth .lang-btn:hover { color: rgba(250, 247, 239, 0.95); }
+.lang-switch-auth .lang-btn.is-on {
+  background: rgba(250, 247, 239, 0.92);
+  color: var(--ink);
+}
+
+.who {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink-soft);
+}

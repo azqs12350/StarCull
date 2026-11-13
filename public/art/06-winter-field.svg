@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" width="900" height="1200">
+  <defs>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.84" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.15"/></feComponentTransfer>
+    </filter>
+    <linearGradient id="air" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EFEDE6"/>
+      <stop offset="1" stop-color="#DAD8CE"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1200" fill="url(#air)"/>
+  <circle cx="648" cy="306" r="84" fill="#F7F5EE" opacity="0.92"/>
+  <rect x="0" y="610" width="900" height="90" fill="#C7C6BC" opacity="0.8"/>
+  <rect x="0" y="700" width="900" height="500" fill="#E8E5DB"/>
+  <rect x="0" y="606" width="900" height="3" fill="#5C5A50" opacity="0.45"/>
+  <rect x="196" y="700" width="196" height="500" fill="#DCD9CF" opacity="0.65"/>
+  <rect x="0" y="884" width="900" height="2" fill="#5C5A50" opacity="0.28"/>
+  <rect width="900" height="1200" filter="url(#grain)" opacity="0.55"/>
+</svg>

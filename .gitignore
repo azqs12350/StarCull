@@ -1,0 +1,25 @@
+# 环境变量（含密钥）
+.env
+.env.*
+
+# 依赖
+node_modules/
+
+# 运行时数据：db.json 含密码哈希/会话，uploads 为图片，qiniu-index 为派生索引，
+# db.polluted-*.json 为历史脏数据备份，均不入库
+data/
+
+# 日志与临时文件
+*.log
+*.tmp
+*.bak
+
+# 本地截图缓存
+.screenshots/
+
+# 微信开发者工具个人配置
+miniprogram/project.private.config.json
+
+# 系统文件
+.DS_Store
+Thumbs.db

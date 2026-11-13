@@ -1,0 +1,261 @@
+/* StarCull · 消息系统：用户侧 + 管理员侧共用 */
+
+/* ---------- 右上角铃铛按钮 ---------- */
+.msg-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text, #333);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.15s, color 0.15s;
+}
+.msg-bell:hover { background: rgba(0,0,0,0.06); }
+.msg-bell:focus-visible { outline: 2px solid var(--accent, #2a5db0); outline-offset: -2px; }
+
+/* 有未读时亮起来 */
+.msg-bell.has-unread {
+  color: #d8504b;
+}
+.msg-bell.has-unread svg {
+  filter: drop-shadow(0 0 3px rgba(216, 80, 75, 0.5));
+}
+
+/* 红点 */
+.bell-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  background: #d8504b;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  animation: bell-pulse 1.6s ease-in-out infinite;
+}
+@keyframes bell-pulse {
+  0%, 100% { transform: scale(1);   box-shadow: 0 0 0 0 rgba(216, 80, 75, 0.6); }
+  50%      { transform: scale(1.25); box-shadow: 0 0 0 6px rgba(216, 80, 75, 0); }
+}
+
+/* ---------- 用户侧消息面板 ---------- */
+.messages-view {
+  padding: 24px 0;
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: calc(100vh - 160px);
+}
+
+.messages-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #fafaf7;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 200px;
+}
+
+.messages-composer {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+.messages-composer textarea {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 48px;
+  max-height: 140px;
+}
+.messages-composer textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+/* ---------- 聊天气泡（管理员/用户共用） ---------- */
+.msg-bubble {
+  max-width: 75%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+.msg-bubble .msg-meta {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-bottom: 3px;
+}
+.msg-bubble .msg-body { white-space: pre-wrap; }
+
+/* 用户发的消息（蓝色 / 靠右） */
+.msg-bubble.is-self {
+  align-self: flex-end;
+  background: var(--accent, #2a5db0);
+  color: #fff;
+  border-bottom-right-radius: 2px;
+}
+.msg-bubble.is-self .msg-meta { color: rgba(255,255,255,0.7); }
+
+/* 管理员回复（灰 / 靠左） */
+.msg-bubble.is-admin {
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid var(--line-soft);
+  color: var(--text, #222);
+  border-bottom-left-radius: 2px;
+}
+
+/* ---------- 管理员侧消息面板（工作室 tab） ---------- */
+.studio-panel-messages {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 0;
+  background: #fff;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 520px;
+}
+
+.messages-sidebar {
+  border-right: 1px solid var(--line-soft);
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  background: #fafaf7;
+}
+.messages-sidebar .panel-title {
+  padding: 0 14px 10px;
+  margin: 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.studio-threads-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.studio-thread-item {
+  width: 100%;
+  display: block;
+  text-align: left;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: background 0.1s;
+}
+.studio-thread-item:hover { background: #f0ede6; }
+.studio-thread-item.is-on { background: #fff; border-left: 3px solid var(--accent, #2a5db0); }
+
+.thread-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  margin-bottom: 3px;
+}
+.thread-head .badge {
+  background: #d8504b;
+  color: #fff;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+.thread-preview {
+  font-size: 12px;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.thread-meta {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+}
+
+.messages-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.messages-main .messages-thread {
+  flex: 1;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--line-soft);
+  background: #fff;
+}
+.messages-main .messages-composer {
+  padding: 10px 14px;
+}
+
+/* tab 未读徽章 */
+.studio-tab.has-badge::after {
+  content: attr(data-unread);
+  display: inline-block;
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  font-size: 10px;
+  padding: 0 4px;
+  margin-left: 6px;
+  background: #d8504b;
+  color: #fff;
+  border-radius: 8px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* 导航 messages 未读徽章（用户侧） */
+#messages-btn.has-badge::after {
+  content: attr(data-count);
+  display: inline-block;
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  font-size: 10px;
+  padding: 0 4px;
+  margin-left: 4px;
+  background: #d8504b;
+  color: #fff;
+  border-radius: 8px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* responsive */
+@media (max-width: 780px) {
+  .studio-panel-messages {
+    grid-template-columns: 1fr;
+  }
+  .messages-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--line-soft);
+    max-height: 200px;
+  }
+}

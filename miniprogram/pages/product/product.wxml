@@ -1,0 +1,80 @@
+<!--pages/product/product.wxml-->
+<view class="page" wx:if="{{product}}">
+
+  <!-- 大图 -->
+  <image
+    class="hero-img"
+    src="{{product.image}}"
+    mode="widthFix"
+    show-menu-by-longpress="{{false}}"
+  />
+
+  <!-- 标题区 -->
+  <view class="info">
+    <view class="title-zh">{{lang === 'en' ? (product.titleEn || product.titleZh) : (product.titleZh || product.titleEn)}}</view>
+
+    <!-- 系列标签 -->
+    <view class="series-row" wx:if="{{product.seriesZh || product.seriesEn}}">
+      <text class="tag">{{lang === 'en' ? (product.seriesEn || product.seriesZh) : (product.seriesZh || product.seriesEn)}}</text>
+    </view>
+
+    <view class="stats">
+      <text class="stat">★ {{product.count || 0}}</text>
+      <text class="stat stat-like">👍 {{product.likeCount || 0}}</text>
+      <text class="stat stat-dislike">👎 {{product.dislikeCount || 0}}</text>
+    </view>
+
+    <view class="divider" />
+
+    <!-- 作品说明 -->
+    <view class="note" wx:if="{{(lang === 'zh' && product.noteZh) || (lang === 'en' && product.noteEn)}}">
+      <text class="note-text">{{lang === 'zh' ? product.noteZh : product.noteEn}}</text>
+    </view>
+  </view>
+
+  <!-- 互动按钮区 -->
+  <view class="actions">
+    <view
+      class="action-btn {{product.starred ? 'on' : ''}}"
+      bindtap="onStar"
+    >
+      <text class="action-ico">{{product.starred ? '★' : '☆'}}</text>
+      <text class="action-label">
+        <text wx:if="{{product.starred}}">{{lang === 'zh' ? '已收藏' : 'Collected'}}</text>
+        <text wx:else>{{lang === 'zh' ? '收藏' : 'Collect'}}</text>
+      </text>
+    </view>
+    <view
+      class="action-btn {{product.liked ? 'on-like' : ''}}"
+      bindtap="onLike"
+    >
+      <text class="action-ico">👍</text>
+      <text class="action-label">
+        <text wx:if="{{product.liked}}">{{lang === 'zh' ? '已点赞' : 'Liked'}}</text>
+        <text wx:else>{{lang === 'zh' ? '点赞' : 'Like'}}</text>
+      </text>
+    </view>
+    <view
+      class="action-btn {{product.disliked ? 'on-dislike' : ''}}"
+      bindtap="onDislike"
+    >
+      <text class="action-ico">👎</text>
+      <text class="action-label">
+        <text wx:if="{{product.disliked}}">{{lang === 'zh' ? '已踩' : 'Disliked'}}</text>
+        <text wx:else>{{lang === 'zh' ? '踩' : 'Dislike'}}</text>
+      </text>
+    </view>
+  </view>
+
+  <!-- 去抽奖入口 -->
+  <view class="draw-bar" bindtap="goDraw">
+    <text class="draw-bar-text">{{lang === 'zh' ? '🎰 去抽奖，把这件作品带回家' : '🎰 Try your luck — take this home'}}</text>
+    <text class="draw-bar-arrow">›</text>
+  </view>
+
+</view>
+
+<view class="loading" wx:else>
+  <text wx:if="{{lang === 'zh'}}">加载中...</text>
+  <text wx:else>Loading...</text>
+</view>

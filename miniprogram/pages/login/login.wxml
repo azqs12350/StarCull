@@ -1,0 +1,131 @@
+<!--pages/login/login.wxml-->
+<view class="page">
+
+  <!-- 品牌区 -->
+  <view class="brand">
+    <text class="brand-name">StarCull</text>
+    <text class="brand-sub">{{lang === 'zh' ? '工作室作品甄选' : 'Studio Selection'}}</text>
+  </view>
+
+  <!-- Tab 切换 -->
+  <view class="tabs" wx:if="{{mode === 'login' || mode === 'register'}}">
+    <view class="tab {{mode === 'login' ? 'tab-on' : ''}}" bindtap="setMode" data-mode="login">
+      {{lang === 'zh' ? '登录' : 'Sign in'}}
+    </view>
+    <view class="tab {{mode === 'register' ? 'tab-on' : ''}}" bindtap="setMode" data-mode="register">
+      {{lang === 'zh' ? '注册' : 'Register'}}
+    </view>
+  </view>
+
+  <!-- ========== 登录 ========== -->
+  <view class="form" wx:if="{{mode === 'login'}}">
+    <view class="form-group">
+      <text class="form-label">{{lang === 'zh' ? '账号' : 'Username'}}</text>
+      <input class="form-input" placeholder="username" value="{{loginUsername}}" bindinput="onLoginUsername" />
+    </view>
+    <view class="form-group">
+      <text class="form-label">{{lang === 'zh' ? '密码' : 'Password'}}</text>
+      <input class="form-input" placeholder="••••••••" password="{{true}}" value="{{loginPassword}}" bindinput="onLoginPassword" />
+    </view>
+    <button class="submit-btn" bindtap="doLogin">{{lang === 'zh' ? '登录' : 'Sign in'}}</button>
+    <view class="form-extra">
+      <text class="link" bindtap="setMode" data-mode="recover-question">{{lang === 'zh' ? '忘记密码？' : 'Forgot password?'}}</text>
+    </view>
+    <view class="form-extra">
+      <text class="link-sub" bindtap="setMode" data-mode="register">
+        {{lang === 'zh' ? '没有账号？去注册' : "Don't have one? Register"}}
+      </text>
+    </view>
+
+    <!-- 分隔线 -->
+    <view class="divider-line">
+      <text class="divider-line-text">{{lang === 'zh' ? '或' : 'or'}}</text>
+    </view>
+
+    <!-- 微信一键登录 -->
+    <button class="wechat-btn" bindtap="doWechatLogin">
+      <text class="wechat-icon">💬</text>
+      <text>{{lang === 'zh' ? '微信一键登录' : 'Sign in with WeChat'}}</text>
+    </button>
+  </view>
+
+  <!-- ========== 注册 ========== -->
+  <view class="form" wx:if="{{mode === 'register'}}">
+    <view class="form-group">
+      <text class="form-label">{{lang === 'zh' ? '账号（2-24位字母/数字/._-）' : 'Username (2-24 chars)'}}</text>
+      <input class="form-input" placeholder="your-name" value="{{regUsername}}" bindinput="onRegUsername" />
+    </view>
+    <view class="form-group">
+      <text class="form-label">{{lang === 'zh' ? '密码（至少 6 位）' : 'Password (min. 6 chars)'}}</text>
+      <input class="form-input" placeholder="••••••••" password="{{true}}" value="{{regPassword}}" bindinput="onRegPassword" />
+    </view>
+
+    <view class="divider">
+      <text class="divider-text">{{lang === 'zh' ? '安全问题（找回密码用，很重要！）' : 'Security question (password recovery — IMPORTANT!)'}}</text>
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">{{lang === 'zh' ? '选择问题' : 'Pick a question'}}</text>
+      <picker
+        bindchange="onRegSecQChange"
+        range="{{questions}}"
+        range-key="{{lang === 'zh' ? 'zh' : 'en'}}"
+      >
+        <view class="form-picker">
+          {{regSecQ ? '已选择' : (lang === 'zh' ? '请选择...' : 'Select...')}}
+          <text class="picker-arrow">▾</text>
+        </view>
+      </picker>
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">{{lang === 'zh' ? '你的答案' : 'Your answer'}}</text>
+      <input class="form-input" placeholder="{{lang === 'zh' ? '请认真填写！' : 'Answer carefully!'}}" value="{{regSecA}}" bindinput="onRegSecA" />
+    </view>
+
+    <view class="warn-hint">
+      <text wx:if="{{lang === 'zh'}}">⚠️ 这是找回密码的唯一渠道，请认真填写！</text>
+      <text wx:else>⚠️ This is your ONLY way to recover password.</text>
+    </view>
+
+    <button class="submit-btn" bindtap="doRegister">{{lang === 'zh' ? '注册' : 'Register'}}</button>
+    <view class="form-extra">
+      <text class="link-sub" bindtap="setMode" data-mode="login">
+        {{lang === 'zh' ? '已有账号？去登录' : 'Have an account? Sign in'}}
+      </text>
+    </view>
+  </view>
+
+  <!-- ========== 找回密码 Step 1 ========== -->
+  <view class="form" wx:if="{{mode === 'recover-question'}}">
+    <view class="form-group">
+      <text class="form-label">{{lang === 'zh' ? '你的账号' : 'Your username'}}</text>
+      <input class="form-input" placeholder="your-name" value="{{recUsername}}" bindinput="onRecUsername" />
+    </view>
+    <button class="submit-btn" bindtap="doRecoverNext">{{lang === 'zh' ? '下一步' : 'Next'}}</button>
+    <view class="form-extra">
+      <text class="link-sub" bindtap="setMode" data-mode="login">{{lang === 'zh' ? '← 返回登录' : '← Back to sign in'}}</text>
+    </view>
+  </view>
+
+  <!-- ========== 找回密码 Step 2 ========== -->
+  <view class="form" wx:if="{{mode === 'recover-reset'}}">
+    <view class="sec-question-card">
+      <text class="sq-label">{{lang === 'zh' ? '安全问题' : 'Security question'}}</text>
+      <text class="sq-text">{{recQuestion}}</text>
+    </view>
+    <view class="form-group">
+      <text class="form-label">{{lang === 'zh' ? '你的答案' : 'Your answer'}}</text>
+      <input class="form-input" placeholder="{{lang === 'zh' ? '输入答案' : 'Your answer'}}" value="{{recAnswer}}" bindinput="onRecAnswer" />
+    </view>
+    <view class="form-group">
+      <text class="form-label">{{lang === 'zh' ? '新密码（至少 6 位）' : 'New password (min. 6 chars)'}}</text>
+      <input class="form-input" placeholder="••••••••" password="{{true}}" value="{{recNewPassword}}" bindinput="onRecNewPassword" />
+    </view>
+    <button class="submit-btn" bindtap="doRecoverReset">{{lang === 'zh' ? '重置密码' : 'Reset password'}}</button>
+    <view class="form-extra">
+      <text class="link-sub" bindtap="setMode" data-mode="login">{{lang === 'zh' ? '← 返回登录' : '← Back to sign in'}}</text>
+    </view>
+  </view>
+
+</view>

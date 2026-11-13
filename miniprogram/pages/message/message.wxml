@@ -1,0 +1,40 @@
+<!--pages/message/message.wxml-->
+<view class="page">
+
+  <!-- 消息列表 -->
+  <scroll-view class="msg-list" scroll-y="true" scroll-into-view="{{thread.length ? 'msg-' + thread[thread.length - 1].id : ''}}">
+    <view class="msg-empty" wx:if="{{!thread.length}}">
+      <text class="empty-icon">💬</text>
+      <text wx:if="{{lang === 'zh'}}">还没有留言，有问题发给工作室吧！</text>
+      <text wx:else>No messages. Drop the studio a line!</text>
+    </view>
+
+    <view
+      wx:for="{{thread}}"
+      wx:key="id"
+      id="msg-{{item.id}}"
+      class="msg-row {{item.fromUser ? 'mine' : 'theirs'}}"
+    >
+      <view class="msg-bubble">
+        <text class="msg-text">{{item.content}}</text>
+        <text class="msg-time">{{item.createdAt}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部输入栏 -->
+  <view class="input-bar">
+    <input
+      class="msg-input"
+      placeholder="{{lang === 'zh' ? '输入消息...' : 'Type a message...'}}"
+      value="{{input}}"
+      bindinput="onInput"
+      confirm-type="send"
+      bindconfirm="onSend"
+    />
+    <view class="send-btn {{!canSend ? 'send-btn-disabled' : ''}}" catchtap="onSend">
+      {{lang === 'zh' ? '发送' : 'Send'}}
+    </view>
+  </view>
+
+</view>

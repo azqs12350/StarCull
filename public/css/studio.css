@@ -1,0 +1,199 @@
+/* StarCull · studio — 后台 */
+
+/* ============ studio ============ */
+
+.studio {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 48px var(--gutter) 120px;
+}
+
+.studio-head { margin-bottom: 44px; }
+
+.back { margin-bottom: 30px; display: inline-block; letter-spacing: 0.08em; text-transform: none; font-size: 11px; }
+
+.studio-title {
+  font-family: var(--serif);
+  font-size: clamp(34px, 4.6vw, 54px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin-bottom: 14px;
+}
+
+.studio-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.panel {
+  padding: 30px;
+  border: 1px solid var(--line);
+  background: var(--paper-soft);
+}
+
+.panel-wide { margin-top: 28px; }
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  font-family: var(--serif);
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+.count-tag {
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.dropzone {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  margin-bottom: 26px;
+  border: 1px dashed rgba(23, 21, 15, 0.28);
+  background: #fffdf8;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.4s, background 0.4s;
+}
+
+.dropzone:hover, .dropzone.is-over { border-color: var(--ink); background: #fdfbf5; }
+
+.dropzone img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 10px;
+  background: #fffdf8;
+}
+
+.dropzone-msg {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+.dropzone-msg small { font-size: 9.5px; letter-spacing: 0.08em; color: var(--muted); }
+.dropzone-plus { font-family: var(--serif); font-size: 26px; line-height: 1; color: var(--muted); }
+
+.upload-form .form-error { margin-top: 0; }
+
+.draw-list { display: grid; gap: 0; }
+
+.draw-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto auto auto auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 12px;
+}
+
+.draw-row:last-child { border-bottom: 0; }
+
+/* 状态徽章 */
+.status-badge {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 4px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+.status-badge.is-no-address { background: #f1f1f1; color: #888; }
+.status-badge.is-preparing  { background: #fff7e0; color: #7a5700; }
+.status-badge.is-shipped    { background: #dbe8ff; color: #1f3f87; }
+.status-badge.is-done       { background: #dff0df; color: #2f6b2f; }
+
+/* 管理员操作列 */
+.admin-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  max-width: 260px;
+}
+.admin-actions .muted { font-size: 11px; font-style: italic; }
+
+/* 收货详情 · 折叠按钮与内容 */
+.draw-shipping-toggle-wrap {
+  grid-column: 1 / 8;
+  display: flex;
+  justify-content: flex-end;
+}
+.draw-shipping-toggle-wrap .draw-shipping-toggle { margin-top: -8px; margin-bottom: 4px; }
+
+.draw-shipping-details {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  padding: 12px 16px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  border: 1px dashed var(--line-soft);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.draw-shipping-details.is-empty {
+  font-style: italic;
+  color: var(--muted);
+}
+
+.shipping-empty-hint {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ---------- studio tabs ---------- */
+
+.studio-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 32px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.studio-tab {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  padding: 9px 18px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-family: var(--sans);
+  cursor: pointer;
+  transition: color var(--ease), border-color var(--ease), background var(--ease);
+}
+
+.studio-tab:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.studio-tab.is-on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper-soft);
+}

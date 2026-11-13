@@ -1,0 +1,107 @@
+<!--pages/mine/mine.wxml-->
+<view class="page">
+
+  <!-- 顶部用户信息卡 -->
+  <view class="user-card" wx:if="{{user}}">
+    <view class="avatar">
+      <text class="avatar-text">{{user.username ? user.username[0] : '💬'}}</text>
+    </view>
+    <view class="user-info">
+      <view class="username">{{user.username || (lang === 'zh' ? '微信用户' : 'WeChat user')}}</view>
+      <view class="user-meta">
+        <text class="meta">⭐ {{points}} {{lang === 'zh' ? '积分' : 'pts'}}</text>
+        <text class="meta" wx:if="{{user.role === 'admin'}}"> · {{lang === 'zh' ? '管理员' : 'Admin'}}</text>
+        <text class="meta" wx:else> · {{lang === 'zh' ? '普通用户' : 'User'}}</text>
+        <text class="meta" wx:if="{{user.wechatBound}}"> · 💬</text>
+      </view>
+    </view>
+    <view class="lang-switch" bindtap="switchLang">
+      <text wx:if="{{lang === 'zh'}}">EN</text>
+      <text wx:else>中文</text>
+    </view>
+  </view>
+
+  <!-- 未登录状态 -->
+  <view class="user-card guest" wx:else bindtap="goLogin">
+    <view class="avatar">
+      <text class="avatar-text">?</text>
+    </view>
+    <view class="user-info">
+      <view class="username">{{lang === 'zh' ? '点击登录 / 注册' : 'Tap to sign in'}}</view>
+      <view class="user-meta">
+        <text class="meta">{{lang === 'zh' ? '登录后可抽奖、收藏、留言' : 'Draw, collect, message after sign-in'}}</text>
+      </view>
+    </view>
+    <view class="lang-switch" catchtap="switchLang">
+      <text wx:if="{{lang === 'zh'}}">EN</text>
+      <text wx:else>中文</text>
+    </view>
+  </view>
+
+  <!-- 菜单列表 -->
+  <view class="menu-list" wx:if="{{user}}">
+    <view class="menu-item" bindtap="openSecurityForm">
+      <text class="menu-icon">🔒</text>
+      <text class="menu-label">{{lang === 'zh' ? '安全问题' : 'Security question'}}</text>
+      <view class="menu-val {{hasSecurityQuestion ? 'val-ok' : 'val-warn'}}">
+        {{hasSecurityQuestion ? (lang === 'zh' ? '已设置' : 'Set') : (lang === 'zh' ? '未设置' : 'Not set')}}
+      </view>
+      <text class="menu-arrow">›</text>
+    </view>
+
+    <!-- 微信绑定 / 解绑 -->
+    <view class="menu-item" bindtap="{{user.wechatBound ? 'doUnbindWechat' : 'doBindWechat'}}">
+      <text class="menu-icon">💬</text>
+      <text class="menu-label">{{lang === 'zh' ? '微信绑定' : 'WeChat'}}</text>
+      <view class="menu-val {{user.wechatBound ? 'val-ok' : 'val-warn'}}">
+        {{user.wechatBound ? (lang === 'zh' ? '已绑定' : 'Bound') : (lang === 'zh' ? '未绑定' : 'Not bound')}}
+      </view>
+      <text class="menu-arrow">›</text>
+    </view>
+
+    <view class="menu-item" bindtap="onLogout">
+      <text class="menu-icon">🚪</text>
+      <text class="menu-label menu-danger">{{lang === 'zh' ? '退出登录' : 'Sign out'}}</text>
+      <text class="menu-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 设置安全问题弹窗 -->
+  <view class="modal-mask" wx:if="{{showSecurityForm}}" bindtap="closeSecurityForm">
+    <view class="modal-panel" catchtap="noop">
+      <view class="modal-header">
+        <text class="modal-title">{{lang === 'zh' ? '设置安全问题' : 'Set security question'}}</text>
+        <text class="modal-close" bindtap="closeSecurityForm">✕</text>
+      </view>
+
+      <view class="modal-body">
+        <view class="form-group">
+          <text class="form-label">{{lang === 'zh' ? '选择问题' : 'Pick a question'}}</text>
+          <picker
+            bindchange="onSecQChange"
+            range="{{securityQuestions}}"
+            range-key="{{lang === 'zh' ? 'zh' : 'en'}}"
+          >
+            <view class="form-picker">
+              {{secQText || (lang === 'zh' ? '请选择...' : 'Select...')}}
+              <text class="picker-arrow">▾</text>
+            </view>
+          </picker>
+        </view>
+
+        <view class="form-group">
+          <text class="form-label">{{lang === 'zh' ? '你的答案' : 'Your answer'}}</text>
+          <input class="form-input" placeholder="{{lang === 'zh' ? '请输入答案' : 'Type your answer'}}" value="{{secA}}" bindinput="onSecAInput" />
+        </view>
+
+        <view class="warn-hint">
+          <text wx:if="{{lang === 'zh'}}">⚠️ 这是找回密码的唯一渠道，请认真填写！</text>
+          <text wx:else>⚠️ This is your ONLY way to recover password.</text>
+        </view>
+
+        <button class="save-btn" bindtap="saveSecurity">{{lang === 'zh' ? '保存' : 'Save'}}</button>
+      </view>
+    </view>
+  </view>
+
+</view>

@@ -1,0 +1,130 @@
+/* pages/product/product.wxss */
+
+.page {
+  padding-bottom: 180rpx;
+}
+
+.hero-img {
+  width: 100%;
+  display: block;
+  background: #f0f0ec;
+}
+
+.info {
+  padding: 28rpx 32rpx;
+}
+
+.title-zh {
+  font-size: 36rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
+}
+
+.title-en {
+  font-size: 24rpx;
+  color: #888888;
+  font-style: italic;
+  margin-top: 6rpx;
+}
+
+.series-row {
+  margin-top: 16rpx;
+}
+
+.stats {
+  margin-top: 18rpx;
+  display: flex;
+  gap: 20rpx;
+}
+
+.stat {
+  font-size: 24rpx;
+  color: #666666;
+}
+
+.stat-like {
+  color: #d04759;
+}
+
+.stat-dislike {
+  color: #999999;
+}
+
+.divider {
+  height: 1rpx;
+  background: #ececea;
+  margin: 24rpx 0;
+}
+
+.note-text {
+  font-size: 28rpx;
+  color: #444444;
+  line-height: 1.7;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-around;
+  padding: 24rpx 32rpx;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16rpx 32rpx;
+  border-radius: 16rpx;
+  background: #ffffff;
+  min-width: 160rpx;
+}
+
+.action-btn.on { background: #fffbe6; }
+.action-btn.on-like { background: #ffeaea; }
+.action-btn.on-dislike { background: #f0f0ec; }
+
+.action-ico {
+  font-size: 44rpx;
+  line-height: 1;
+}
+
+.action-btn.on .action-ico { color: #c9a227; }
+.action-btn.on-like .action-ico { color: #d04759; }
+.action-btn.on-dislike .action-ico { color: #999999; }
+
+.action-label {
+  font-size: 22rpx;
+  color: #666666;
+  margin-top: 8rpx;
+}
+
+.draw-bar {
+  position: fixed;
+  bottom: 24rpx;
+  left: 24rpx;
+  right: 24rpx;
+  height: 96rpx;
+  background: #1a1a1a;
+  color: #ffffff;
+  border-radius: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0,0,0,0.15);
+}
+
+.draw-bar-text {
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.draw-bar-arrow {
+  font-size: 36rpx;
+  opacity: 0.7;
+}
+
+.loading {
+  text-align: center;
+  padding: 120rpx 0;
+  color: #999999;
+}

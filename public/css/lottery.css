@@ -1,0 +1,174 @@
+/* StarCull · lottery — 积分配送与中奖记录 */
+
+/* ============ points & shipping (lottery system) ============ */
+
+.points-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(216, 194, 148, 0.12);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #8a6d2b;
+}
+.points-badge .points-icon { font-size: 13px; color: #c9a24b; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-soft);
+  border-color: var(--line);
+}
+.btn-ghost:hover { background: rgba(23, 21, 15, 0.04); color: var(--ink); }
+
+.result-type {
+  display: inline-block;
+  margin: 14px 0 0;
+  padding: 5px 14px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 999px;
+}
+.result-type.is-canvas {
+  background: rgba(120, 110, 90, 0.1);
+  color: #6b5d3f;
+  border: 1px solid rgba(120, 110, 90, 0.25);
+}
+.result-type.is-framed {
+  background: rgba(201, 162, 75, 0.14);
+  color: #8a6d2b;
+  border: 1px solid rgba(201, 162, 75, 0.4);
+}
+
+.result-none {
+  padding: 40px 20px;
+}
+.result-none-text {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ink-soft);
+}
+.result-none .btn {
+  margin-top: 20px;
+}
+
+.shipping-form {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+.shipping-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+.shipping-sub {
+  margin: 6px 0 18px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+.shipping-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 20px;
+}
+.shipping-grid .field { margin-bottom: 16px; }
+.shipping-grid .field-wide { grid-column: 1 / -1; }
+.shipping-grid select {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  padding: 10px 0;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--ink);
+}
+.shipping-grid select:focus { outline: none; border-bottom-color: var(--ink); }
+
+.upgrade-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 6px 0 16px;
+  padding: 14px 16px;
+  background: rgba(201, 162, 75, 0.08);
+  border: 1px solid rgba(201, 162, 75, 0.3);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.upgrade-option input { margin-top: 3px; }
+
+.privacy-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 8px 0 18px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.privacy-check input { margin-top: 3px; flex-shrink: 0; }
+
+.shipping-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.shipping-confirmed {
+  margin-top: 24px;
+  padding: 20px;
+  background: rgba(80, 130, 80, 0.08);
+  border: 1px solid rgba(80, 130, 80, 0.3);
+  border-radius: 8px;
+}
+.confirmed-text {
+  font-family: var(--serif);
+  font-size: 15px;
+  color: #3d6b3d;
+  margin-bottom: 14px;
+}
+.shipping-confirmed .btn-ghost { margin-top: 4px; }
+
+/* ============ prizes (winning records) ============ */
+
+.prizes { padding: 40px 32px 120px; max-width: 880px; margin: 0 auto; }
+
+.prizes-list { display: flex; flex-direction: column; gap: 18px; margin-top: 28px; }
+
+.prize-card {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.prize-thumb { flex-shrink: 0; width: 90px; height: 110px; border-radius: 6px; overflow: hidden; background: #efe9dc; }
+.prize-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.prize-info { flex: 1; min-width: 0; }
+.prize-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.prize-status { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.prize-title { font-family: var(--serif); font-size: 18px; letter-spacing: -0.01em; margin: 4px 0; }
+.prize-meta { font-size: 12px; color: var(--ink-soft); margin: 4px 0 10px; line-height: 1.5; }
+.prize-shipping { font-size: 13px; line-height: 1.6; color: var(--ink); margin: 10px 0; padding: 12px 14px; background: rgba(0,0,0,0.02); border-radius: 6px; }
+.prize-shipping.muted { color: var(--muted); font-style: italic; background: transparent; padding: 0; }
+.prize-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+
+@media (max-width: 640px) {
+  .prizes { padding: 24px 16px 120px; }
+  .prize-card { flex-direction: column; gap: 14px; }
+  .prize-thumb { width: 100%; height: 180px; }
+}
