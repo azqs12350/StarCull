@@ -36,6 +36,7 @@ Page({
     editingAddress: false,
     previewVisible: false,
     previewImage: '',
+    previewProduct: null,
     lockFrame: false,
     prizeResult: null,  // 最近一次抽奖结果
     lang: 'zh',
@@ -161,6 +162,7 @@ Page({
       });
 
       this._writeDrawCache(session.user, drawsList, points, noneCount, comfort, lang);
+      this._prepareDrawImages(drawsList);
     } catch (e) {
       console.warn('[draw] loadData failed:', e.message);
       if (this.data.draws && this.data.draws.length) {
@@ -251,24 +253,56 @@ Page({
 
   // 点击中奖作品图：原地放大预览（不跳页，关闭后仍在结果页）
   onPrizeImageTap() {
-    this.showPrizePreview();
+    this.showPrizePreview(this.data.prizeResult && this.data.prizeResult.product);
   },
 
-  showPrizePreview() {
-    var p = this.data.prizeResult && this.data.prizeResult.product;
-    var src = p && p.image;
-    if (!src) return;
-    this.setData({ previewVisible: true, previewImage: src });
+  showPrizePreview(product) {
+    var p = product || (this.data.prizeResult && this.data.prizeResult.product);
+    if (!p || !p.image) return;
+    var src = p.image.indexOf('data:') === 0 ? p.image : imageCache.get(p.id);
+    if (!src) src = p.image;
+    if (src !== p.image) p = Object.assign({}, p, { image: src });
+    this.setData({ previewVisible: true, previewImage: src, previewProduct: p });
   },
 
   closePrizePreview() {
     if (!this.data.previewVisible) return;
-    this.setData({ previewVisible: false, previewImage: '' });
+    this.setData({ previewVisible: false, previewImage: '', previewProduct: null });
+  },
+
+  // 抽奖记录里的图片：走同一套放大浮层
+  onRecordImageTap(e) {
+    var id = e.currentTarget.dataset.id;
+    var item = null;
+    for (var i = 0; i < this.data.draws.length; i++) {
+      if (this.data.draws[i].id === id) { item = this.data.draws[i]; break; }
+    }
+    if (!item || !item.product) return;
+
+    var product = item.product;
+    var cached = product.image && product.image.indexOf('data:') === 0
+      ? product.image
+      : imageCache.get(product.id);
+    if (cached && cached !== product.image) {
+      this._applyDrawImage(product.id, cached);
+      product = Object.assign({}, product, { image: cached });
+    }
+    this.showPrizePreview(product);
+
+    if (product.image && product.image.indexOf('data:') !== 0) {
+      this._ensureProductImage(product).then((url) => {
+        if (!url) return;
+        this._applyDrawImage(product.id, url);
+        if (this.data.previewVisible && this.data.previewProduct && this.data.previewProduct.id === product.id) {
+          this.setData({ previewImage: url, 'previewProduct.image': url });
+        }
+      });
+    }
   },
 
   // 放大层里的收藏 / 点赞 / 点踩：复用首页同一组接口，互斥与积分规则全由后端决定
   async onPrizeStar() {
-    var p = this.data.prizeResult && this.data.prizeResult.product;
+    var p = this.data.previewProduct;
     if (!p || !p.id || !auth.isLoggedIn()) return;
     if (this._statsPending) return;
     this._statsPending = true;
@@ -283,7 +317,7 @@ Page({
   },
 
   async onPrizeLike() {
-    var p = this.data.prizeResult && this.data.prizeResult.product;
+    var p = this.data.previewProduct;
     if (!p || !p.id || !auth.isLoggedIn()) return;
     if (this._statsPending) return;
     this._statsPending = true;
@@ -303,7 +337,7 @@ Page({
   },
 
   async onPrizeDislike() {
-    var p = this.data.prizeResult && this.data.prizeResult.product;
+    var p = this.data.previewProduct;
     if (!p || !p.id || !auth.isLoggedIn()) return;
     if (this._statsPending) return;
     this._statsPending = true;
@@ -329,20 +363,31 @@ Page({
     });
   },
 
-  // 同步结果区、列表和全局数据，返回首页时状态一致
+  // 同步放大层、结果区、记录列表、普通列表和全局数据
   _applyProductStats(id, fields) {
     var keys = Object.keys(fields);
     var patch = {};
 
+    var preview = this.data.previewProduct;
+    if (preview && preview.id === id) {
+      for (var a = 0; a < keys.length; a++) patch['previewProduct.' + keys[a]] = fields[keys[a]];
+    }
+
     var prize = this.data.prizeResult && this.data.prizeResult.product;
     if (prize && prize.id === id) {
-      for (var a = 0; a < keys.length; a++) patch['prizeResult.product.' + keys[a]] = fields[keys[a]];
+      for (var b = 0; b < keys.length; b++) patch['prizeResult.product.' + keys[b]] = fields[keys[b]];
+    }
+
+    var draws = this.data.draws || [];
+    for (var d = 0; d < draws.length; d++) {
+      if (!draws[d].product || draws[d].product.id !== id) continue;
+      for (var e = 0; e < keys.length; e++) patch['draws[' + d + '].product.' + keys[e]] = fields[keys[e]];
     }
 
     var list = this.data.products || [];
     for (var i = 0; i < list.length; i++) {
       if (list[i].id !== id) continue;
-      for (var b = 0; b < keys.length; b++) patch['products[' + i + '].' + keys[b]] = fields[keys[b]];
+      for (var f = 0; f < keys.length; f++) patch['products[' + i + '].' + keys[f]] = fields[keys[f]];
       break;
     }
 
@@ -355,6 +400,76 @@ Page({
       for (var c = 0; c < keys.length; c++) globals[g][keys[c]] = fields[keys[c]];
       break;
     }
+  },
+
+  // 抽奖记录列表图片统一转 base64：先查共享缓存，缺的批量补齐
+  _prepareDrawImages(drawsList) {
+    if (!drawsList || !drawsList.length) return;
+    var urls = [];
+    var srcMap = {};
+
+    for (var i = 0; i < drawsList.length; i++) {
+      var p = drawsList[i].product;
+      if (!p || !p.image) continue;
+      if (p.image.indexOf('data:') === 0) {
+        imageCache.set(p.id, p.image);
+        continue;
+      }
+      var cached = imageCache.get(p.id);
+      if (cached) {
+        this._applyDrawImage(p.id, cached);
+        continue;
+      }
+      if (!api.needsPatch(p.image)) continue;
+      if (srcMap[p.image]) {
+        srcMap[p.image].push(p.id);
+        continue;
+      }
+      srcMap[p.image] = [p.id];
+      urls.push(p.image);
+    }
+    if (!urls.length) return;
+
+    api.patchImageUrls(urls, (map) => {
+      Object.keys(map).forEach((src) => {
+        var ids = srcMap[src] || [];
+        for (var j = 0; j < ids.length; j++) {
+          imageCache.set(ids[j], map[src]);
+          this._applyDrawImage(ids[j], map[src]);
+        }
+      });
+    }).catch((e) => console.warn('[draw] record images failed:', e.message));
+  },
+
+  _applyDrawImage(productId, url) {
+    if (!productId || !url) return;
+    var patch = {};
+    var draws = this.data.draws || [];
+    for (var i = 0; i < draws.length; i++) {
+      if (draws[i].product && draws[i].product.id === productId) {
+        patch['draws[' + i + '].product.image'] = url;
+      }
+    }
+    if (this.data.previewProduct && this.data.previewProduct.id === productId) {
+      patch['previewProduct.image'] = url;
+      if (this.data.previewVisible) patch.previewImage = url;
+    }
+    if (Object.keys(patch).length) this.setData(patch);
+  },
+
+  _ensureProductImage(product) {
+    if (!product || !product.image) return Promise.resolve('');
+    if (product.image.indexOf('data:') === 0) return Promise.resolve(product.image);
+    var cached = imageCache.get(product.id);
+    if (cached) return Promise.resolve(cached);
+    if (!api.needsPatch(product.image)) return Promise.resolve(product.image);
+    return api.patchImageUrls([product.image], (map) => {
+      var url = map[product.image];
+      if (url) imageCache.set(product.id, url);
+    }).then(() => imageCache.get(product.id) || '').catch((e) => {
+      console.warn('[draw] record image failed:', e.message);
+      return '';
+    });
   },
 
   onHide() {
@@ -519,6 +634,7 @@ Page({
       if (ready) {
         patch.previewVisible = true;
         patch.previewImage = ready;
+        patch.previewProduct = result.product;
       }
     } else if (drawResult && drawResult.prizeType === 'none') {
       patch.prizeResult = null;
@@ -577,7 +693,10 @@ Page({
   _applyResultImage(prizeId, url) {
     if (!this.data.prizeResult || this.data.prizeResult.id !== prizeId) return;
     var patch = { 'prizeResult.product.image': url };
-    if (this.data.previewVisible) patch.previewImage = url;
+    if (this.data.previewProduct && this.data.previewProduct.id === this.data.prizeResult.product.id) {
+      patch['previewProduct.image'] = url;
+      if (this.data.previewVisible) patch.previewImage = url;
+    }
     this.setData(patch);
   },
 
